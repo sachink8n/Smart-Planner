@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+        <h1 class="text-center mb-4 main-title">Add a New Task</h1>
+
+        <div class="form-card">
+            <p class="text-center text-secondary mb-4">You have {{ pending_task_count }} pending task(s). You can add up to 3.</p>
+
+            {% if pending_task_count < 3 %}
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <input type="text" class="form-control form-control-dark" name="title" placeholder="Enter a big task like 'Learn DRF'..." required>
+                    </div>
+                    
+                    <div class="form-check text-center mb-4">
+                        <input class="form-check-input" type="checkbox" id="use_ai" name="use_ai" value="true">
+                        <label class="form-check-label" for="use_ai">
+                            Break down this task using AI ✨
+                        </label>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="difficulty" class="form-label text-secondary">Set Difficulty:</label>
+                        <select name="difficulty" id="difficulty" class="form-select form-control-dark">
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HARD">Hard</option>
+                        </select>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-accent px-4 py-2">Add to Inbox</button>
+                    </div>
+                </form>
+            {% else %}
+                <p class="text-center text-danger fw-bold">You have reached the limit of 3 pending tasks. Complete a task to add a new one.</p>
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'personal_dashboard' %}" class="

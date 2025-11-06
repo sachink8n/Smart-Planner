@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+{% load static %} 
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+        <h1 class="main-title mb-2">{{ plan.subject }} Plan</h1>
+        <p class="text-secondary mb-3"><strong>Goal:</strong> {{ plan.goal }} ({{ plan.duration_days }} Days)</p>
+
+        <div class="d-flex justify-content-end gap-2 mb-4">
+            <a href="{% url 'plan_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to All Plans
+            </a>
+            <a href="{% url 'personal_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-home"></i> Back to Dashboard
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% for day_title, tasks in plan_structure %}
+            <div class="form-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0" style="color: var(--accent-color);">{{ day_title|safe }}</h4> 
+                    <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_title %}" class="d-inline">
+                         {% csrf_token %}
+                         <button type="submit" class="btn btn-sm btn-outline-success">
+                             <i class="fas fa-plus"></i> Add {{ day_title|truncatewords:2 }} Tasks
+                         </button>
+                    </form>
+                </div>
+                
+                <ul class="steps-list"> 
+                    {% for task_html in tasks %}
+                         <li>{{ task_html|safe }}</li> 
+                    {% empty %}
+                        <li>No specific tasks generated for this day.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% empty %}
+             <div class="form-card text-center">
+                 <p class="text-secondary">Could not parse the generated plan. Here is the raw text:</p>
+                 <div style="white-space: pre-wrap; text-align: left; color: var(--text-primary);">
+                    {{ plan.generated_plan|linebreaksbr }}
+                 </div>
+             </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Yeh CSS 'base.html' ki styling ko override karega */
+    
+    .steps-list {
+        counter-reset: task-counter; /* Ek naya counter shuru karo */
+        list-style-type: none; /* Default numbering hatao */
+        padding-left: 0;
+    }
+
+    .steps-list li {
+        counter-increment: task-counter; /* Counter ko 1 se badhao */
+        padding-left: 0; /* Purani padding (✓ ke liye) hatao */
+        text-indent: 0; /* Purana indent hatao */
+    }
+
+    .steps-list li::before {
+        /* Counter ko "Task 1:", "Task 2:" format mein dikhao */
+        content: 'Task ' counter(task-counter) ': '; 
+        
+        color: var(--accent-color); /* Cyan color */
+        font-weight: bold;
+        margin-right: 0.7em; /* "Task 1:" ke baad space do */
+        
+        /* Purani positioning hatao */
+        position: static; 
+    }
+</style>
+{% endblock %}

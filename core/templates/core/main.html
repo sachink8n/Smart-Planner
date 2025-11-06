@@ -1,0 +1,261 @@
+{% extends 'core/base.html' %}
+{% load static %} 
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-warning{% endif %}" 
+                    role="alert" 
+                    style="background-color: {% if message.tags == 'success' %}#134a31{% elif message.tags == 'error' %}#4a1313{% else %}#4a4a13{% endif %}; 
+                           color: {% if message.tags == 'success' %}#a2e8c2{% elif message.tags == 'error' %}#e8a2a2{% else %}#e8e8a2{% endif %}; 
+                           border-color: {% if message.tags == 'success' %}#2b7a4f{% elif message.tags == 'error' %}#7a2b2b{% else %}#7a7a2b{% endif %}; 
+                           font-weight: 500; margin-bottom: 20px; padding: 1rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if profile %}
+        <div class="mb-4">
+            <div class="text-center">
+                <span class="badge bg-light text-dark fs-6 p-2 shadow-sm">
+                    <i class="fas fa-rocket" style="color: #ff6f61;"></i> 
+                    Level {{ profile.level }}: {{ profile.get_title }} 
+                </span>
+            </div>
+            <div class="progress" style="height: 10px; background-color: var(--card-dark); border-radius: 5px; margin-top: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: {% widthratio profile.xp xp_for_next_level 100 %}%; background-color: var(--accent-color);" 
+                     aria-valuenow="{{ profile.xp }}" aria-valuemin="0" aria-valuemax="{{ xp_for_next_level }}"></div>
+            </div>
+            <div class="text-center mt-1">
+                <small class="text-secondary">{{ profile.xp }}/{{ xp_for_next_level }} XP</small> 
+            </div>
+        </div>
+        {% endif %}
+
+        {% if active_task %}
+            <h3 class="mt-5 mb-3">Your Active Task</h3>
+            <div class="task-card {{ active_task.difficulty }}">
+                <div class="task-header">
+                    <div>
+                        <h5 class="task-title">{{ active_task.title }}</h5>
+                        <span class="badge-category me-2">{{ active_task.category }}</span>
+                        <span class="badge badge-difficulty {{ active_task.difficulty }}">{{ active_task.difficulty }}</span>
+                    </div>
+                    <span class="task-date">{{ active_task.created|date:"d M, Y, h:i A" }}</span>
+                </div>
+                
+                {% if active_task.sub_tasks %}
+                <div style="text-align: left; margin-top: 20px; padding-left: 10px;">
+                    <strong>Steps:</strong>
+                    <ul class="steps-list">
+                        {% for sub_task in active_task.sub_tasks %}
+                        <li>{{ sub_task|safe }}</li> {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="mt-4 text-center">
+                    <div id="timer-display" class="display-4 fw-bold my-3">
+                        {{ active_task.time_estimate_minutes|default:"25" }}:00
+                    </div>
+                    <button id="start-btn" class="btn btn-accent px-4 py-2">
+                        <i class="fas fa-play"></i> Start Task
+                    </button>
+                    <button id="add-time-btn" class="btn btn-outline-secondary px-4 py-2 d-none">
+                        <i class="fas fa-plus"></i> Add 5 Min
+                    </button>
+                </div>
+                
+                <div class="mt-4 d-flex justify-content-center gap-2">
+                    <a href="{% url 'complete_task' active_task.id %}"><button class="btn btn-action btn-complete"><i class="fas fa-check"></i> Mark as Complete</button></a>
+                    <a href="{% url 'snooze_task' active_task.id %}"><button class="btn btn-action btn-outline-warning"><i class="fas fa-clock"></i> Snooze</button></a>
+                    <a href="{% url 'delete_task' active_task.id %}"><button class="btn btn-action btn-delete"><i class="fas fa-trash"></i> Delete</button></a>
+                </div>
+            </div>
+        {% endif %}
+
+        {# --- Show add forms whenever the view allows it (so they don't disappear) --- #}
+        {% if show_add_forms %}
+            <div class="form-card mt-5">
+                <h5 class="mb-3"><i class="fas fa-magic-wand-sparkles" style="color: var(--accent-color);"></i> Magic Add - Let AI Handle It</h5>
+                <form method="POST" action="{% url 'createtodo_ai' %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-dark" name="magic_input" placeholder="e.g., 'Learn about Django models'" required>
+                        <button type="submit" class="btn btn-accent ms-2">Add Magically</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-card">
+                <h5 class="mb-3"><i class="fas fa-pencil-alt" style="color: var(--text-secondary);"></i> Add a New Task Manually</h5>
+                <form method="POST" action="{% url 'add_task_manual' %}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-dark" name="title" placeholder="Enter task name..." required>
+                        <button type="submit" class="btn btn-outline-secondary ms-2">Add</button>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+
+       {# show mood chooser when view set the flag OR when there is no active_task (optional) #}
+{% if show_mood or not active_task %}
+<div class="form-card mt-5">
+    {% if pending_tasks %}
+        <h5 class="text-center mb-4">You have {{ pending_tasks.count }} task(s) in your inbox.</h5>
+    {% else %}
+        <h5 class="text-center mb-4">No active tasks right now.</h5>
+    {% endif %}
+    <h6 class="text-center mb-4 text-secondary">
+        How are you feeling right now? Pick a task or take a break.
+    </h6>
+
+    <div class="d-grid gap-3">
+        <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="btn btn-lg btn-outline-success">
+            <i class="fas fa-bolt"></i> Energetic & Focused
+        </a>
+        <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="btn btn-lg btn-outline-warning">
+            <i class="fas fa-smile"></i> Feeling Normal
+        </a>
+        <a href="{% url 'suggest_task_by_mood' 'Easy' %}" class="btn btn-lg btn-outline-danger">
+            <i class="fas fa-coffee"></i> Low Energy
+        </a>
+        <a href="{% url 'relax_mode' %}" class="btn btn-lg btn-outline-info">
+            <i class="fas fa-bed"></i> No Mood to Work
+        </a>
+    </div>
+</div>
+{% endif %}
+
+
+        {% if pending_tasks %}
+        <h3 class="mt-5 mb-3">Up Next (Inbox)</h3>
+        <div class="list-group">
+        {% for task in pending_tasks %}
+            <div class="list-group-item d-flex justify-content-between align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary); margin-bottom: 8px; border-radius: 8px;">
+                <span>
+                    {{ task.title }}
+                    
+                    {% if task.team %}
+                        <a href="{% url 'team_dashboard' task.team.id %}" class="text-decoration-none">
+                            <span class="badge bg-info ms-2"><i class="fas fa-users"></i> {{ task.team.name }}</span>
+                        </a>
+                    {% else %}
+                        <span class="badge bg-primary ms-2"><i class="fas fa-user"></i> Personal</span>
+                    {% endif %}
+                    
+                    <span class="badge badge-difficulty {{ task.difficulty }} ms-2">{{ task.difficulty }}</span>
+                </span>
+                
+                <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger" title="Delete this task">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Helper function to get the CSRF token from cookies (more reliable)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrfToken = getCookie('csrftoken');
+
+    const startBtn = document.getElementById('start-btn');
+    const addTimeBtn = document.getElementById('add-time-btn');
+    const timerDisplay = document.getElementById('timer-display');
+    let timerInterval;
+
+    {% if active_task %}
+    const taskId = {{ active_task.id }};
+
+    // If a timer was already running when the page loaded, resume it
+    {% if active_task.timer_start_time and active_task.timer_seconds_remaining > 0 %}
+        const serverStartTime = new Date("{{ active_task.timer_start_time.isoformat }}").getTime();
+        const nowTime = new Date().getTime();
+        const elapsedSeconds = Math.floor((nowTime - serverStartTime) / 1000);
+        const remainingSeconds = {{ active_task.timer_seconds_remaining }} - elapsedSeconds;
+
+        if (remainingSeconds > 0) {
+            startTimer(remainingSeconds);
+            startBtn.classList.add('d-none');
+            addTimeBtn.classList.remove('d-none');
+        }
+    {% endif %}
+
+    startBtn.addEventListener('click', () => {
+        fetch(`/task/start/${taskId}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                startTimer(data.seconds);
+                startBtn.classList.add('d-none');
+                addTimeBtn.classList.remove('d-none');
+            }
+        });
+    });
+
+    addTimeBtn.addEventListener('click', () => {
+        fetch(`/task/add_time/${taskId}/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok' && timerInterval) {
+                clearInterval(timerInterval);
+                startTimer(data.seconds);
+            }
+        });
+    });
+
+    function startTimer(duration) {
+        let timer = duration;
+        
+        clearInterval(timerInterval);
+
+        timerInterval = setInterval(function () {
+            if (timer < 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "Time's up!";
+            } else {
+                let minutes = parseInt(timer / 60, 10);
+                let seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                timerDisplay.textContent = minutes + ":" + seconds;
+                timer--;
+            }
+        }, 1000);
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

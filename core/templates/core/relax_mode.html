@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7 text-center">
+
+        <h1 class="main-title mb-3">Relax Mode 🧘</h1>
+        <p class="text-secondary mb-4">It's okay to take a break. Try one of these simple activities to reset your mind.</p>
+
+        <div class="list-group text-start">
+            {% for suggestion in suggestions %}
+                <div class="list-group-item d-flex align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary); padding: 15px; margin-bottom: 10px; border-radius: 8px; font-size: 1.1rem;">
+                    
+                    <i class="fas fa-leaf me-3" style="color: #28a745;"></i>
+                    
+                    {{ suggestion }}
+                </div>
+            {% empty %}
+                <p class="text-secondary text-center">Could not fetch suggestions at the moment. Please try again.</p>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'personal_dashboard' %}" class="btn btn-accent">
+                <i class="fas fa-arrow-left"></i> Back to Tasks
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

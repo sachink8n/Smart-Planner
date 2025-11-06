@@ -1,0 +1,127 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="main-title"><i class="fas fa-users"></i> {{ team.name }}</h1>
+            <div>
+                <a href="{% url 'personal_dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-user"></i> My Dashboard</a>
+                <a href="{% url 'team_list' %}" class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-arrow-left"></i> All Teams</a>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-card mb-4">
+                    <h5 class="mb-3">Add a New Team Task</h5>
+                    <form method="POST" action="{% url 'add_team_task' team.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <input type="text" name="title" class="form-control form-control-dark" placeholder="New task title..." required>
+                        </div>
+                        <div class="mb-3">
+                            <select name="assignee" class="form-select form-control-dark">
+                                <option value="">Assign to (optional)...</option>
+                                <option value="all">All Team Members</option>
+                                {% for member in members %}
+                                    <option value="{{ member.id }}">{{ member.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-accent">Add Task</button>
+                    </form>
+                </div>
+
+                <h3 class="mb-3">My Assigned Tasks</h3>
+                <div class="list-group mb-4">
+                    {% for task in my_assigned_tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary);">
+                            <span>
+                                {{ task.title }}
+                                <span class="badge badge-difficulty {{ task.difficulty }} ms-2">{{ task.difficulty }}</span>
+                            </span>
+                            <div>
+                                <a href="{% url 'complete_task' task.id %}" class="btn btn-sm btn-outline-success" title="Mark as Complete"><i class="fas fa-check"></i></a>
+                                {% if request.user == team.owner or request.user == task.assignee %}
+                                <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger" title="Delete Task"><i class="fas fa-times"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-secondary ps-2">You have no tasks assigned to you in this team.</p>
+                    {% endfor %}
+                </div>
+
+                <h3 class="mb-3">Other Team Tasks</h3>
+                <div class="list-group">
+                    {% for task in other_team_tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary);">
+                            <span>
+                                {{ task.title }}
+                                {% if task.assignee %}
+                                    <span class="badge bg-info ms-2">To: {{ task.assignee.username }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary ms-2">Unassigned</span>
+                                {% endif %}
+                            </span>
+                             {% if request.user == team.owner %}
+                                <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger" title="Delete Task"><i class="fas fa-times"></i></a>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-secondary ps-2">No other tasks in this team.</p>
+                    {% endfor %}
+                </div>
+
+                <h3 class="mt-5 mb-3 text-success">Completed Today ✔️</h3>
+                <div class="list-group">
+                    {% for task in completed_today %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-secondary); text-decoration: line-through;">
+                            <span>
+                                {{ task.title }}
+                            </span>
+                            <small>By: {% if task.assignee %}{{ task.assignee.username }}{% else %}N/A{% endif %}</small>
+                        </div>
+                    {% empty %}
+                        <p class="text-secondary ps-2">No tasks have been completed in this team today.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-card">
+                    <h5 class="mb-3">Team Members ({{ members.count }})</h5>
+                    <ul class="list-unstyled">
+                        {% for member in members %}
+                            <li class="mb-1">
+                                <i class="fas fa-user"></i> {{ member.username }}
+                                {% if member == team.owner %}<span class="badge bg-warning text-dark ms-1">Owner</span>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if request.user == team.owner %}
+                        <hr>
+                        <h5 class="mb-3"><i class="fas fa-user-plus"></i> Invite Member</h5>
+                        <form method="POST" action="{% url 'invite_member' team.id %}">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <input type="email" class="form-control form-control-dark" name="email" placeholder="User's email..." required>
+                                <button type="submit" class="btn btn-sm btn-accent ms-2">Invite</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

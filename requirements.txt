@@ -1,0 +1,31 @@
+# Core framework
+Django==5.2.8
+asgiref==3.10.0
+sqlparse==0.5.3
+
+# Optional: Markdown rendering (if used in templates)
+Markdown==3.10
+
+# Async + HTTP client (for Groq or other API calls)
+httpx==0.28.1
+anyio==4.11.0
+sniffio==1.3.1
+
+# AI / Groq related
+groq==0.33.0
+pydantic==2.12.4
+pydantic_core==2.41.5
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+
+# Utilities
+certifi==2025.10.5
+idna==3.11
+
+# (optional, only needed for packaging)
+setuptools==80.9.0
+wheel==0.45.1
+
+
+# for loading environment variables safely
+python-dotenv==1.0.1

@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %} 
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="main-title mb-0">Completed History</h1>
+            
+            {% if grouped_tasks %}
+                <form method="POST" action="{% url 'reset_history' %}" onsubmit="return confirm('Are you sure you want to delete your entire task history? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-action btn-delete">
+                        <i class="fas fa-trash-alt"></i> Clear History
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success" role="alert" style="background-color: #134a31; color: #a2e8c2; border-color: #2b7a4f;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% for date, tasks in grouped_tasks.items %}
+            <h4 class="mt-5 mb-3" style="color: var(--text-secondary);">{{ date|date:"l, d F Y" }}</h4>
+            {% for task in tasks %}
+            <div class="task-card">
+                <div class="task-header">
+                    <div>
+                        <h5 class="task-title" style="text-decoration: line-through; color: var(--text-secondary);">{{ task.title }}</h5>
+                        <span class="badge-category">{{ task.category }}</span>
+                    </div>
+                    <span class="task-date">{{ task.datecompleted|date:"h:i A" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% empty %}
+            <div class="alert" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-secondary);">
+                You have not completed any tasks yet.
+            </div>
+        {% endfor %}
+
+        <div class="mt-5 text-center">
+             <a href="{% url 'personal_dashboard' %}">Back to Main Screen</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

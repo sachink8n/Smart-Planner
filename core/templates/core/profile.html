@@ -1,0 +1,58 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+        <h1 class="main-title text-center mb-4">My Profile</h1>
+
+        <div class="form-card text-center mb-4">
+            <h2 class="mb-3">{{ user.username }}</h2>
+            <span class="badge bg-light text-dark fs-5 p-2 shadow-sm">
+                <i class="fas fa-rocket" style="color: #ff6f61;"></i> 
+                Level {{ profile.level }}: {{ profile.get_title }}
+            </span>
+
+            <div class="progress mt-3" style="height: 10px; background-color: var(--bg-dark);">
+                <div class="progress-bar" role="progressbar" style="width: {% widthratio profile.xp xp_for_next_level 100 %}%; background-color: var(--accent-color);" 
+                     aria-valuenow="{{ profile.xp }}" aria-valuemin="0" aria-valuemax="{{ xp_for_next_level }}"></div>
+            </div>
+            <small class="text-secondary">{{ profile.xp }} / {{ xp_for_next_level }} XP to next level</small>
+        </div>
+
+        <div class="form-card">
+            <h3 class="mb-3"><i class="fas fa-trophy" style="color: #ffc107;"></i> My Badges</h3>
+            <div class="row">
+                {% for badge in all_badges %}
+                    <div class="col-4 col-md-3 text-center mb-3">
+                        <div class="badge-icon {% if badge.id not in earned_badges %}locked{% endif %}" 
+                             title="{{ badge.name }}: {{ badge.description }}">
+                            {{ badge.icon }}
+                        </div>
+                        <small class="text-secondary d-block mt-1">{{ badge.name }}</small>
+                    </div>
+                {% empty %}
+                    <p class="text-secondary">No badges available yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+         <div class="text-center mt-4">
+            <a href="{% url 'personal_dashboard' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-icon {
+        font-size: 3rem;
+        padding: 15px;
+        background-color: var(--bg-dark);
+        border-radius: 50%;
+        border: 2px solid var(--accent-color);
+        transition: all 0.2s ease;
+    }
+    .badge-icon.locked {
+        filter: grayscale(100%);
+        opacity: 0.3;
+    }
+</style>
+{% endblock %}

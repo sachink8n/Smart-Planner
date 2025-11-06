@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="auth-card mx-auto">
+    <h2>Welcome Back</h2>
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input type="text" name="username" id="id_username" class="form-control-dark form-control" placeholder="Enter your username" required>
+        </div>
+        <div class="mb-3">
+            <label for="id_password" class="form-label">Password</label>
+            <input type="password" name="password" id="id_password" class="form-control-dark form-control" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn-accent mt-3">Login</button>
+    </form>
+</div>
+
+<style>
+.auth-card {
+    width: 420px;
+    max-width: 90%;
+    margin: 0 auto;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    text-align: left;
+}
+.auth-card h2 {
+    text-align: center;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin-bottom: 1.5rem;
+}
+.auth-card label {
+    color: #bfbfbf;
+    font-weight: 500;
+}
+.form-control-dark {
+    width: 100%;
+    background-color: #121212;
+    border: 1px solid #333;
+    color: #e0e0e0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+}
+.form-control-dark:focus {
+    border-color: #00bcd4;
+    box-shadow: 0 0 0 0.2rem rgba(0,188,212,0.25);
+    outline: none;
+}
+.btn-accent {
+    display: block;
+    width: 100%;
+    background-color: #00bcd4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.btn-accent:hover {
+    background-color: #0097a7;
+}
+</style>
+{% endblock %}
