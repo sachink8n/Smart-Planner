@@ -41,17 +41,7 @@ A personal productivity and study planner built with <b>Django</b> to help you s
 | **5️⃣ Run Server** | ```bash<br>python manage.py runserver``` | Start Django locally |
 | **6️⃣ Open in Browser** | `http://127.0.0.1:8000/` | Test the app running |
 
----
 
-## 📸 Screenshots
-
-| Dashboard View | Plans Page | Team Page |
-|:---------------:|:----------:|:----------:|
-| ![Dashboard](https://via.placeholder.com/250x150.png?text=Dashboard) | ![Plans](https://via.placeholder.com/250x150.png?text=Plans) | ![Teams](https://via.placeholder.com/250x150.png?text=Teams) |
-
-*(Add real screenshots later for a more complete look.)*
-
----
 
 ## 🚧 Folder Structure
 
