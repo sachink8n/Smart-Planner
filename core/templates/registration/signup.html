@@ -1,24 +1,28 @@
 {% extends "core/base.html" %}
 {% block content %}
 <div class="auth-card mx-auto">
-    <h2>Welcome Back</h2>
-    <form method="post" action="{% url 'login' %}">
+    <h2>Create Account</h2>
+    <form method="post" action="{% url 'signup' %}">
         {% csrf_token %}
         <div class="mb-3">
             <label for="id_username" class="form-label">Username</label>
-            <input type="text" name="username" id="id_username" class="form-control-dark form-control" placeholder="Enter your username" required>
+            <input type="text" name="username" id="id_username" class="form-control-dark form-control" placeholder="Choose a username" required>
+        </div>
+        <div class="mb-3">
+            <label for="id_email" class="form-label">Email Address</label>
+            <input type="email" name="email" id="id_email" class="form-control-dark form-control" placeholder="Enter your email" required>
         </div>
         <div class="mb-3">
             <label for="id_password" class="form-label">Password</label>
-            <input type="password" name="password" id="id_password" class="form-control-dark form-control" placeholder="Enter your password" required>
+            <input type="password" name="password" id="id_password" class="form-control-dark form-control" placeholder="Create a password" required>
         </div>
-        <button type="submit" class="btn-accent mt-3">Login</button>
+        <button type="submit" class="btn-accent mt-3">Send OTP</button>
     </form>
 
     <div class="text-center mt-4">
         <p class="mb-0" style="color: #bfbfbf; font-size: 0.9rem;">
-            Don't have an account? 
-            <a href="{% url 'signup' %}" class="signup-link">Create Account</a>
+            Already have an account? 
+            <a href="{% url 'login' %}" class="login-link">Login Here</a>
         </p>
     </div>
 </div>
@@ -33,6 +37,7 @@
     padding: 2.5rem;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     text-align: left;
+    border-top: 5px solid #00bcd4; /* Teal Accent */
 }
 .auth-card h2 {
     text-align: center;
@@ -55,7 +60,7 @@
 }
 .form-control-dark:focus {
     border-color: #00bcd4;
-    box-shadow: 0 0 0 0.2rem rgba(0,188,212,0.25);
+    box-shadow: 0 0 15px rgba(0,188,212,0.3);
     outline: none;
 }
 .btn-accent {
@@ -72,18 +77,15 @@
 }
 .btn-accent:hover {
     background-color: #0097a7;
+    box-shadow: 0 0 20px rgba(0,188,212,0.4);
 }
-
-/* New Signup Link Style */
-.signup-link {
+.login-link {
     color: #00bcd4;
     text-decoration: none;
     font-weight: 600;
     margin-left: 5px;
-    transition: 0.3s;
 }
-.signup-link:hover {
-    color: #0097a7;
+.login-link:hover {
     text-decoration: underline;
 }
 </style>

@@ -50,6 +50,12 @@ urlpatterns = [
 
     path('plans/delete-completed/', views.delete_completed_plans_view, name='delete_completed_plans'),
 
+    path('signup/', views.signup_view, name='signup'),
+    path('verify-otp/', views.verify_otp_view, name='verify_otp'),
+
+    path('assign-task/', views.assign_task_to_member_view, name='assign_task_to_member'),
+    path('schedule-task/<int:task_id>/', views.schedule_assigned_task_view, name='schedule_assigned_task'),
+
     
 
 

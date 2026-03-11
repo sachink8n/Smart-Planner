@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import timedelta
+import datetime
+
 
 
 
@@ -56,12 +58,20 @@ class Todo(models.Model):
         ('DELETED', 'Deleted'),
     ]
 
+    PRIORITY_CHOICES = [
+        (3, 'High'),
+        (2, 'Medium'),
+        (1, 'Low'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
     title = models.CharField(max_length=200)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='INBOX')
     created = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
     snoozed_until = models.DateTimeField(null=True, blank=True)
+
+    deadline = models.DateField(null=True, blank=True)
 
     category = models.CharField(max_length=50, default='Other')
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='Moderate')
@@ -80,6 +90,10 @@ class Todo(models.Model):
  
     study_plan = models.ForeignKey('StudyPlan', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     scheduled_date = models.DateField(null=True, blank=True)
+
+    sub_tasks = models.TextField(null=True, blank=True)
+
+    priority = models.IntegerField(choices=PRIORITY_CHOICES, default=2)
 
     def __str__(self):
         return self.title
@@ -102,6 +116,8 @@ class Profile(models.Model):
     early_bird_streak = models.IntegerField(default=0)
     last_night_owl_date = models.DateField(null=True, blank=True)
     night_owl_streak = models.IntegerField(default=0)
+
+    last_reminder_sent_date = models.DateField(null=True, blank=True)
 
     def get_title(self):
         titles = [
@@ -144,3 +160,13 @@ class UserBadge(models.Model):
 
     class Meta:
         unique_together = ('user', 'badge')
+
+class OTPVerification(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        # OTP is valid for 5 minutes
+        expiration_time = self.created_at + datetime.timedelta(minutes=5)
+        return timezone.now() < expiration_time

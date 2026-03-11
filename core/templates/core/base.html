@@ -23,6 +23,7 @@
             --accent-hover:#0097a7;
             --btn-success:#4caf50;
             --btn-danger:#f44336;
+            --btn-warning: #f1c40f;
             --muted:#6f6f6f;
         }
 
@@ -33,15 +34,19 @@
             padding-top:2rem;
             padding-bottom:4rem;
         }
+        
+        .main-title {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
 
-        /* NAVBAR */
+        /* --- NAVBAR (FIXED) --- */
         .navbar{
             background-color: transparent !important;
             padding-top:0.5rem;
-            padding-bottom:0.5rem;
+            padding-bottom: 2.5rem;
             position: relative;
         }
-
         .navbar-brand{
             position: absolute;
             left: 50%;
@@ -54,11 +59,10 @@
             text-align: center;
             padding: 0.25rem 0;
         }
-
-        /* hamburger button - FIXED VISIBILITY */
         .nav-hamburger {
             margin-left: auto;
             z-index: 1051;
+            transition: opacity 0.2s; /* Smooth transition */
         }
         .nav-hamburger .btn {
             border-radius: 8px;
@@ -76,52 +80,42 @@
             font-size: 1.1rem;
         }
 
-        /* OFFCANVAS (menu) - make items visible on dark bg */
+        /* --- OFFCANVAS (MENU) --- */
         .offcanvas {
             background: linear-gradient(180deg, var(--card-dark), var(--card-darker));
             color: var(--text-primary);
         }
-
         .offcanvas .offcanvas-header {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: none;
         }
-
         .offcanvas .offcanvas-title {
             color: var(--text-primary);
             font-weight:700;
         }
-
         .offcanvas .btn-close {
             filter: invert(1) brightness(1.5);
             opacity: 0.8;
         }
-
-        .offcanvas .offcanvas-body {
-            padding-top: 0.5rem;
-        }
-
-        .offcanvas .text-secondary {
-            color: var(--text-secondary) !important;
-        }
-
-        /* list items */
         .offcanvas .list-group-item {
             background: transparent;
             color: var(--text-primary) !important;
             border: none;
             padding: 0.9rem 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .offcanvas .list-group-item:first-child { 
+            border-top: none;
         }
         .offcanvas .list-group-item .fa,
         .offcanvas .list-group-item .fas {
             color: var(--text-primary) !important;
             opacity: 0.95;
+            width: 22px;
+            text-align: center;
         }
         .offcanvas .list-group-item span {
             color: var(--text-primary) !important;
             margin-left: 0.5rem;
-        }
-        .offcanvas .list-group-item + .list-group-item {
-            border-top: 1px solid rgba(255,255,255,0.05);
         }
         .offcanvas .list-group-item:hover {
             background: rgba(255,255,255,0.08);
@@ -131,8 +125,6 @@
         .offcanvas .list-group-item:hover span {
             color: var(--accent-color) !important;
         }
-
-        /* make logout button stand out */
         .offcanvas .btn-logout {
             border: 1px solid rgba(244,67,54,0.3);
             color: var(--btn-danger) !important;
@@ -147,8 +139,6 @@
         .offcanvas .btn-logout .fas {
             color: var(--btn-danger) !important;
         }
-
-        /* Login button visibility fix */
         .offcanvas .btn-outline-light {
             color: var(--text-primary) !important;
             border-color: rgba(255,255,255,0.2) !important;
@@ -160,112 +150,200 @@
             color: #fff !important;
         }
 
-        /* difficulty badges (task card) */
-        .badge-difficulty {
-            display:inline-block;
-            font-weight:700;
-            padding: 0.28rem 0.6rem;
-            border-radius: 14px;
-            font-size:0.82rem;
-            color:#fff;
-            border:1px solid transparent;
-            margin-right:0.5rem;
+        /* --- CARDS (Form, Task, etc.) --- */
+        .form-card, .task-card {
+            background-color: var(--card-dark);
+            padding: 1.75rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-dark);
+            margin-bottom: 1.5rem;
         }
-        .badge-difficulty.Easy { background:#2ecc71; border-color:#27ae60; color:#05280f; }
-        .badge-difficulty.Moderate { background:#f1c40f; border-color:#d4ac0d; color:#2e2a00; }
-        .badge-difficulty.Hard { background:#e74c3c; border-color:#c0392b; color:#2b0700; }
-        .badge-difficulty:not(.Easy):not(.Moderate):not(.Hard) {
-            background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.05); color: var(--text-primary);
+        .task-card {
+            border-left: 4px solid var(--accent-color);
+        }
+        .task-card.Easy { border-left-color: var(--btn-success); }
+        .task-card.Moderate { border-left-color: var(--btn-warning); }
+        .task-card.Hard { border-left-color: var(--btn-danger); }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        .task-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .task-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            margin-left: 1rem;
         }
 
-        /* BUTTON FIXES - Make all buttons visible */
-        .btn {
+        /* --- BUTTONS --- */
+        .btn-accent {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #000 !important;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-accent:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        .btn-outline-secondary {
+            border-color: var(--border-dark) !important;
+            color: var(--text-secondary) !important;
+        }
+        .btn-outline-secondary:hover {
+            background-color: rgba(255,255,255,0.05) !important;
+            border-color: var(--text-secondary) !important;
             color: var(--text-primary) !important;
         }
-        
-        .btn-outline-secondary,
-        .btn-outline-dark {
-            border-color: rgba(255,255,255,0.2) !important;
-            color: var(--text-primary) !important;
-            background: rgba(255,255,255,0.05);
+        .btn-action {
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
         }
-        
-        .btn-outline-secondary:hover,
-        .btn-outline-dark:hover {
-            background: rgba(255,255,255,0.1) !important;
-            border-color: rgba(255,255,255,0.3) !important;
+        .btn-complete {
+            background-color: var(--btn-success);
+            border-color: var(--btn-success);
             color: #fff !important;
         }
-
-        .btn-success {
-            background: var(--btn-success) !important;
-            border-color: var(--btn-success) !important;
+        .btn-outline-warning {
+            border-color: var(--btn-warning) !important;
+            color: var(--btn-warning) !important;
+        }
+        .btn-outline-warning:hover {
+            background-color: var(--btn-warning) !important;
+            color: #000 !important;
+        }
+        .btn-delete {
+            background-color: var(--btn-danger);
+            border-color: var(--btn-danger);
             color: #fff !important;
         }
+        .btn-outline-success { color: var(--btn-success) !important; border-color: var(--btn-success) !important; }
+        .btn-outline-success:hover { background-color: var(--btn-success) !important; color: #fff !important; }
+        .btn-outline-danger { color: var(--btn-danger) !important; border-color: var(--btn-danger) !important; }
+        .btn-outline-danger:hover { background-color: var(--btn-danger) !important; color: #fff !important; }
+        .btn-outline-info { color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
+        .btn-outline-info:hover { background-color: var(--accent-color) !important; color: #000 !important; }
 
-        .btn-danger {
-            background: var(--btn-danger) !important;
-            border-color: var(--btn-danger) !important;
-            color: #fff !important;
-        }
-
-        /* Input placeholders - FIXED COLOR */
-        input::placeholder,
+        /* --- FORMS (FIXED) --- */
+        .form-control-dark::placeholder,
         textarea::placeholder {
             color: var(--text-secondary) !important;
             opacity: 0.7;
         }
-
-        input, textarea {
+        input.form-control-dark, 
+        textarea.form-control-dark {
             background: var(--card-darker) !important;
             color: var(--text-primary) !important;
             border-color: rgba(255,255,255,0.1) !important;
         }
-
-        input:focus, textarea:focus {
+        select.form-select {
+            background-color: var(--card-darker) !important;
+            color: var(--text-primary) !important;
+            border-color: rgba(255,255,255,0.1) !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239a9a9a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 16px 12px !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input.form-control-dark:focus, 
+        textarea.form-control-dark:focus,
+        select.form-select:focus {
             background: var(--card-dark) !important;
             color: var(--text-primary) !important;
             border-color: var(--accent-color) !important;
             box-shadow: 0 0 0 0.2rem rgba(0, 188, 212, 0.25) !important;
         }
 
-        /* auth page spacing so brand and welcome box don't collide */
+        /* --- SUB-TASK STEPS LIST (Green Checkmark) --- */
+        .steps-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+        .steps-list li {
+            position: relative;
+            padding-left: 1.8em; 
+            text-indent: -1.8em; 
+            color: var(--text-primary); 
+            margin-bottom: 0.75rem; 
+            line-height: 1.6;
+        }
+        .steps-list li::before {
+            content: '✓'; 
+            color: var(--btn-success); 
+            font-weight: bold;
+            margin-right: 0.7em;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        /* --- Difficulty Badges --- */
+        .badge-difficulty {
+            display:inline-block;
+            font-weight:700;
+            padding: 0.28rem 0.6rem;
+            border-radius: 14px;
+            font-size:0.82rem;
+            border:1px solid transparent;
+            margin-right:0.5rem;
+        }
+        .badge-difficulty.Easy { background:#2ecc71; border-color:#27ae60; color:#05280f; }
+        .badge-difficulty.Moderate { background:#f1c40f; border-color:#d4ac0d; color:#2e2a00; }
+        .badge-difficulty.Hard { background:#e74c3c; border-color:#c0392b; color:#2b0700; }
+        
+        .badge-category {
+            background-color: rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 0.3em 0.6em;
+            border-radius: 6px;
+        }
+        
         .auth-page main{
             display:flex;
             align-items:flex-start;
             justify-content:center;
             min-height: calc(100vh - 150px);
             padding-top: 3.5rem;
-            padding-bottom:2rem;
         }
-
-        /* small screens */
-        @media (max-width:767px){
-            .navbar-brand{ font-size:1.9rem; transform:translateX(-50%); }
+        
+        @media (max-width: 767px) {
+            .navbar-brand { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body {% if not user.is_authenticated %}class="auth-page"{% endif %}>
+    
     <div class="container">
-        <nav class="navbar navbar-expand-lg">
+        <nav class="navbar">
             <div class="container-fluid p-0 d-flex align-items-center">
-                <!-- Centered brand -->
                 <a class="navbar-brand" href="{% url 'personal_dashboard' %}">Smart Planner</a>
 
-                <!-- Hamburger toggler: opens offcanvas with all options -->
-                <div class="nav-hamburger">
-                    <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="Open menu">
+                <div class="nav-hamburger" id="hamburgerWrapper">
+                    <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="Open menu">
                         <i class="fas fa-bars"></i>
                     </button>
                 </div>
             </div>
         </nav>
 
-        <!-- Offcanvas menu (right side) -->
-        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="mainMenuLabel">Menu</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
 
             <div class="offcanvas-body">
@@ -274,25 +352,25 @@
 
                     <div class="list-group list-group-flush">
                         <a href="{% url 'profile' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="fas fa-user-circle" style="width:22px;text-align:center;"></i>
+                            <i class="fas fa-user-circle"></i>
                             <span>Profile</span>
                         </a>
-
-                        <a href="{% url 'plan_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="fas fa-list-alt" style="width:22px;text-align:center;"></i>
+                        <a href="{% url 'create_study_plan' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-calendar-alt"></i>
                             <span>Create Plan</span>
                         </a>
-
+                        <a href="{% url 'plan_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-list-alt"></i>
+                            <span>My Plans</span>
+                        </a>
                         <a href="{% url 'task_history' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="fas fa-history" style="width:22px;text-align:center;"></i>
+                            <i class="fas fa-history"></i>
                             <span>History</span>
                         </a>
-
                         <a href="{% url 'team_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="fas fa-users" style="width:22px;text-align:center;"></i>
+                            <i class="fas fa-users"></i>
                             <span>Teams</span>
                         </a>
-
                         <div class="list-group-item bg-transparent mt-3">
                             <form action="{% url 'logout' %}" method="POST" class="d-inline w-100">
                                 {% csrf_token %}
@@ -315,7 +393,21 @@
         </main>
     </div>
 
-    <!-- Bootstrap JS bundle (for offcanvas) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const myOffcanvas = document.getElementById('mainMenu');
+        const hamburger = document.getElementById('hamburgerWrapper');
+        
+        myOffcanvas.addEventListener('show.bs.offcanvas', () => {
+            hamburger.style.opacity = '0';
+            hamburger.style.pointerEvents = 'none';
+        });
+        
+        myOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
+            hamburger.style.opacity = '1';
+            hamburger.style.pointerEvents = 'auto';
+        });
+    </script>
 </body>
 </html>

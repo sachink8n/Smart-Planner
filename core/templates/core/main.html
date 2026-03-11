@@ -1,172 +1,331 @@
 {% extends 'core/base.html' %}
 {% load static %} 
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-9 col-lg-7">
 
-
         {% if messages %}
             {% for message in messages %}
-                <div class="alert 
-                    {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-warning{% endif %}" 
+                <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %}" 
                     role="alert" 
-                    style="background-color: {% if message.tags == 'success' %}#134a31{% elif message.tags == 'error' %}#4a1313{% else %}#4a4a13{% endif %}; 
-                           color: {% if message.tags == 'success' %}#a2e8c2{% elif message.tags == 'error' %}#e8a2a2{% else %}#e8e8a2{% endif %}; 
-                           border-color: {% if message.tags == 'success' %}#2b7a4f{% elif message.tags == 'error' %}#7a2b2b{% else %}#7a7a2b{% endif %}; 
-                           font-weight: 500; margin-bottom: 20px; padding: 1rem;">
+                    style="background-color: {% if 'success' in message.tags %}#134a31{% elif 'error' in message.tags or 'danger' in message.tags %}#4a1313{% else %}#4a4a13{% endif %}; 
+                           color: {% if 'success' in message.tags %}#a2e8c2{% elif 'error' in message.tags or 'danger' in message.tags %}#e8a2a2{% else %}#e8e8a2{% endif %}; 
+                           border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
 
         {% if profile %}
-        <div class="mb-4">
+        <div class="mb-5">
             <div class="text-center">
-                <span class="badge bg-light text-dark fs-6 p-2 shadow-sm">
-                    <i class="fas fa-rocket" style="color: #ff6f61;"></i> 
+                <span class="badge bg-light text-dark fs-6 p-2 shadow-sm" style="border-radius: 20px;">
+                    <i class="fas fa-rocket me-1" style="color: #ff6f61;"></i> 
                     Level {{ profile.level }}: {{ profile.get_title }} 
                 </span>
             </div>
-            <div class="progress" style="height: 10px; background-color: var(--card-dark); border-radius: 5px; margin-top: 10px;">
-                <div class="progress-bar" role="progressbar" style="width: {% widthratio profile.xp xp_for_next_level 100 %}%; background-color: var(--accent-color);" 
-                     aria-valuenow="{{ profile.xp }}" aria-valuemin="0" aria-valuemax="{{ xp_for_next_level }}"></div>
+            <div class="progress" style="height: 12px; background-color: #1e1e1e; border-radius: 10px; margin-top: 15px; border: 1px solid #2e2e2e;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                     style="width: {% if xp_for_next_level > 0 %}{% widthratio profile.xp xp_for_next_level 100 %}{% else %}0{% endif %}%; background-color: var(--accent-color);" 
+                     aria-valuenow="{{ profile.xp }}"></div>
             </div>
-            <div class="text-center mt-1">
-                <small class="text-secondary">{{ profile.xp }}/{{ xp_for_next_level }} XP</small> 
+            <div class="text-center mt-2">
+                <small class="text-secondary fw-bold">{{ profile.xp }} / {{ xp_for_next_level }} XP</small> 
             </div>
         </div>
+        {% endif %}
+
+        {% if show_add_forms %}
+            <div class="card mb-4 border-0 shadow-lg glow-on-hover" style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid var(--accent-color) !important;">
+                <div class="card-body p-4">
+                    <h6 class="text-info small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-wand-magic-sparkles me-2"></i>AI QUICK ADD</h6>
+                    <form method="POST" action="{% url 'createtodo_ai' %}">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-terminal small"></i></span>
+                            <input type="text" class="form-control form-control-dark border-0" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." style="background: #141414 !important; color: white !important;" required>
+                            <button type="submit" class="btn btn-accent px-4 fw-bold" style="border-radius: 0 10px 10px 0;">Magic Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-5 border-0 shadow-lg" style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid #444 !important;">
+                <div class="card-body p-4">
+                    <h6 class="text-secondary small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-plus-circle me-2"></i>MANUAL TASK</h6>
+                    <form method="POST" action="{% url 'add_task_manual' %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-pen-nib small"></i></span>
+                                    <input type="text" class="form-control form-control-dark border-0" name="title" placeholder="Enter task name..." style="background: #141414 !important; color: white !important;" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                                    <option value="1">Low Priority</option>
+                                    <option value="2" selected>Medium Priority</option>
+                                    <option value="3">High Priority</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-secondary w-100 mt-3 fw-bold py-2" style="border-radius: 10px;">Add Manually</button>
+                    </form>
+                </div>
+            </div>
         {% endif %}
 
         {% if active_task %}
-            <h3 class="mt-5 mb-3">Your Active Task</h3>
-            <div class="task-card {{ active_task.difficulty }}">
-                <div class="task-header">
+            <h3 class="mb-3 text-white fw-bold"><i class="fas fa-fire text-warning me-2"></i>Current Mission</h3>
+            <div class="task-card {{ active_task.difficulty }} p-4 mb-5 shadow-lg active-mission-glow" style="border-radius: 20px;">
+                <div class="task-header d-flex justify-content-between">
                     <div>
-                        <h5 class="task-title">{{ active_task.title }}</h5>
-                        <span class="badge-category me-2">{{ active_task.category }}</span>
-                        <span class="badge badge-difficulty {{ active_task.difficulty }}">{{ active_task.difficulty }}</span>
+                        <h4 class="task-title mb-2 text-white">{{ active_task.title|safe }}</h4>
+                        <div class="d-flex gap-2">
+                            <span class="badge-category">{{ active_task.category }}</span>
+                            <span class="badge badge-difficulty {{ active_task.difficulty }}">{{ active_task.difficulty }}</span>
+                        </div>
                     </div>
-                    <span class="task-date">{{ active_task.created|date:"d M, Y, h:i A" }}</span>
                 </div>
-                
+                <div class="mt-4 text-center">
+                    <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text">
+                        {{ active_task.time_estimate_minutes|default:"25" }}:00
+                    </div>
+                    <button id="start-btn" class="btn btn-accent btn-lg px-5 shadow fw-bold glow-button">START FOCUS</button>
+                </div>
+
                 {% if active_task.sub_tasks %}
-                <div style="text-align: left; margin-top: 20px; padding-left: 10px;">
-                    <strong>Steps:</strong>
-                    <ul class="steps-list">
-                        {% for sub_task in active_task.sub_tasks %}
-                        <li>{{ sub_task|safe }}</li> {% endfor %}
-                    </ul>
+                <div class="mt-5 pt-4 border-top border-secondary text-start">
+                    <h6 class="text-info fw-bold mb-4 uppercase tracking-wider" style="letter-spacing: 1px; font-size: 0.85rem;">
+                        <i class="fas fa-robot me-2"></i>AI STEP-BY-STEP GUIDE
+                    </h6>
+                    <div id="ai-steps-box" class="d-flex flex-column gap-3">
+                        <div id="raw-ai-data" class="d-none">{{ active_task.sub_tasks|safe }}</div>
+                        <div id="formatted-steps"></div>
+                    </div>
                 </div>
                 {% endif %}
 
-                <div class="mt-4 text-center">
-                    <div id="timer-display" class="display-4 fw-bold my-3">
-                        {{ active_task.time_estimate_minutes|default:"25" }}:00
-                    </div>
-                    <button id="start-btn" class="btn btn-accent px-4 py-2">
-                        <i class="fas fa-play"></i> Start Task
-                    </button>
-                    <button id="add-time-btn" class="btn btn-outline-secondary px-4 py-2 d-none">
-                        <i class="fas fa-plus"></i> Add 5 Min
-                    </button>
-                </div>
-                
-                <div class="mt-4 d-flex justify-content-center gap-2">
-                    <a href="{% url 'complete_task' active_task.id %}"><button class="btn btn-action btn-complete"><i class="fas fa-check"></i> Mark as Complete</button></a>
-                    <a href="{% url 'snooze_task' active_task.id %}"><button class="btn btn-action btn-outline-warning"><i class="fas fa-clock"></i> Snooze</button></a>
-                    <a href="{% url 'delete_task' active_task.id %}"><button class="btn btn-action btn-delete"><i class="fas fa-trash"></i> Delete</button></a>
+                <div class="mt-5 d-flex justify-content-center gap-2">
+                    <a href="{% url 'complete_task' active_task.id %}" class="btn btn-complete flex-fill py-2 fw-bold glow-button-success">COMPLETE</a>
+                    <a href="{% url 'delete_task' active_task.id %}" class="btn btn-delete flex-fill py-2 fw-bold">DELETE</a>
                 </div>
             </div>
         {% endif %}
 
-        {# --- Show add forms whenever the view allows it (so they don't disappear) --- #}
-        {% if show_add_forms %}
-            <div class="form-card mt-5">
-                <h5 class="mb-3"><i class="fas fa-magic-wand-sparkles" style="color: var(--accent-color);"></i> Magic Add - Let AI Handle It</h5>
-                <form method="POST" action="{% url 'createtodo_ai' %}">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <input type="text" class="form-control form-control-dark" name="magic_input" placeholder="e.g., 'Learn about Django models'" required>
-                        <button type="submit" class="btn btn-accent ms-2">Add Magically</button>
-                    </div>
-                </form>
+        {% if show_mood or not active_task %}
+        <div class="form-card text-center my-5 p-5 border-0 shadow-lg" style="background: linear-gradient(145deg, #1e1e1e, #161616); border-radius: 20px;">
+            <h4 class="mb-3 text-white">How's the energy right now?</h4>
+            <div class="d-grid gap-3">
+                <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="btn btn-lg btn-outline-success py-3"><i class="fas fa-bolt me-2"></i> Focused / High Energy</a>
+                <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="btn btn-lg btn-outline-warning py-3"><i class="fas fa-smile me-2"></i> Feeling Normal</a>
+                <a href="{% url 'suggest_task_by_mood' 'Easy' %}" class="btn btn-lg btn-outline-danger py-3"><i class="fas fa-coffee me-2"></i> Low Battery</a>
+                <a href="{% url 'relax_mode' %}" class="btn btn-lg btn-outline-info py-3"><i class="fas fa-bed me-2"></i> No Mood to Work</a>
             </div>
-
-            <div class="form-card">
-                <h5 class="mb-3"><i class="fas fa-pencil-alt" style="color: var(--text-secondary);"></i> Add a New Task Manually</h5>
-                <form method="POST" action="{% url 'add_task_manual' %}">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <input type="text" class="form-control form-control-dark" name="title" placeholder="Enter task name..." required>
-                        <button type="submit" class="btn btn-outline-secondary ms-2">Add</button>
-                    </div>
-                </form>
-            </div>
-        {% endif %}
-
-       {# show mood chooser when view set the flag OR when there is no active_task (optional) #}
-{% if show_mood or not active_task %}
-<div class="form-card mt-5">
-    {% if pending_tasks %}
-        <h5 class="text-center mb-4">You have {{ pending_tasks.count }} task(s) in your inbox.</h5>
-    {% else %}
-        <h5 class="text-center mb-4">No active tasks right now.</h5>
-    {% endif %}
-    <h6 class="text-center mb-4 text-secondary">
-        How are you feeling right now? Pick a task or take a break.
-    </h6>
-
-    <div class="d-grid gap-3">
-        <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="btn btn-lg btn-outline-success">
-            <i class="fas fa-bolt"></i> Energetic & Focused
-        </a>
-        <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="btn btn-lg btn-outline-warning">
-            <i class="fas fa-smile"></i> Feeling Normal
-        </a>
-        <a href="{% url 'suggest_task_by_mood' 'Easy' %}" class="btn btn-lg btn-outline-danger">
-            <i class="fas fa-coffee"></i> Low Energy
-        </a>
-        <a href="{% url 'relax_mode' %}" class="btn btn-lg btn-outline-info">
-            <i class="fas fa-bed"></i> No Mood to Work
-        </a>
-    </div>
-</div>
-{% endif %}
-
-
-        {% if pending_tasks %}
-        <h3 class="mt-5 mb-3">Up Next (Inbox)</h3>
-        <div class="list-group">
-        {% for task in pending_tasks %}
-            <div class="list-group-item d-flex justify-content-between align-items-center" style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary); margin-bottom: 8px; border-radius: 8px;">
-                <span>
-                    {{ task.title }}
-                    
-                    {% if task.team %}
-                        <a href="{% url 'team_dashboard' task.team.id %}" class="text-decoration-none">
-                            <span class="badge bg-info ms-2"><i class="fas fa-users"></i> {{ task.team.name }}</span>
-                        </a>
-                    {% else %}
-                        <span class="badge bg-primary ms-2"><i class="fas fa-user"></i> Personal</span>
-                    {% endif %}
-                    
-                    <span class="badge badge-difficulty {{ task.difficulty }} ms-2">{{ task.difficulty }}</span>
-                </span>
-                
-                <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger" title="Delete this task">
-                    <i class="fas fa-times"></i>
-                </a>
-            </div>
-        {% endfor %}
         </div>
         {% endif %}
 
+        {% if assigned_tasks %}
+            <h3 class="mt-5 mb-3 text-info fw-bold"><i class="fas fa-users-viewfinder me-2"></i>New Team Assignments</h3>
+            <div class="row g-3 mb-5">
+                {% for task in assigned_tasks %}
+                    <div class="col-md-12">
+                        <div class="card border-0 shadow-lg" id="card-{{ task.id }}" 
+                             style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid var(--accent-color) !important;">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="text-white mb-0 fw-bold">{{ task.title|safe }}</h5>
+                                    <span class="badge bg-info text-dark">Team Task</span>
+                                </div>
+                                <p class="small text-secondary mb-3">
+                                    Leader's Deadline: <span id="deadline-{{ task.id }}" class="text-warning fw-bold">{{ task.deadline|date:"Y-m-d" }}</span>
+                                </p>
+                                <form method="POST" action="{% url 'schedule_assigned_task' task.id %}" onsubmit="return validateDate('{{ task.id }}')" class="row g-2">
+                                    {% csrf_token %}
+                                    <div class="col-md-8">
+                                        <input type="date" id="date-input-{{ task.id }}" name="my_schedule_date" 
+                                               class="form-control form-control-dark border-0" 
+                                               style="background: #141414 !important; color: white !important;"
+                                               onchange="checkDeadline('{{ task.id }}')" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-accent w-100 fw-bold">Schedule</button>
+                                    </div>
+                                    <div id="alert-{{ task.id }}" class="col-12 text-danger small mt-2 d-none fw-bold">
+                                        <i class="fas fa-exclamation-triangle"></i> Red Alert: Past Deadline!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if pending_tasks %}
+            <h3 class="mt-5 mb-4 text-secondary fw-bold"><i class="fas fa-layer-group me-2"></i>Up Next</h3>
+            <div class="list-group border-0">
+                {% for task in pending_tasks %}
+                    <div class="list-group-item mb-3 p-4 border-0 shadow-sm" style="background: #1e1e1e; border-radius: 16px; border-left: 6px solid var(--accent-color) !important;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="pe-4 w-100">
+                                <div class="task-content text-white fw-medium mb-3" style="font-size: 1.1rem; line-height: 1.6;">
+                                    {{ task.title|safe }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <span class="badge {% if task.team %}bg-info text-dark{% else %}bg-primary text-white{% endif %} px-2 py-1">
+                                        {% if task.team %}Team Task{% else %}Personal{% endif %}
+                                    </span>
+                                    <span class="badge badge-difficulty {{ task.difficulty }} px-2 py-1">{{ task.difficulty }}</span>
+                                </div>
+                            </div>
+                            <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger border-0"><i class="fas fa-times fs-5"></i></a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
     </div>
 </div>
 
+<style>
+    /* TEAL GLOW LOGIC */
+    .ai-step-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 16px 20px;
+        border-left: 4px solid #0dcaf0; 
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        transition: all 0.3s ease;
+    }
+
+    /* Hover par Teal Glow */
+    .ai-step-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(8px);
+        box-shadow: 0 0 15px rgba(13, 202, 240, 0.3); /* The Glow */
+        border-color: #0dcaf0;
+    }
+
+    .active-mission-glow {
+        border-left: 6px solid #0dcaf0 !important;
+        box-shadow: -10px 0 20px rgba(13, 202, 240, 0.1); /* Subtle side glow */
+    }
+
+    /* Button Glows */
+    .glow-button:hover {
+        box-shadow: 0 0 20px rgba(13, 202, 240, 0.6);
+        transform: translateY(-2px);
+    }
+
+    .glow-button-success:hover {
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .step-number {
+        background: #0dcaf0;
+        color: #000;
+        font-weight: 800;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        margin-top: 3px;
+        box-shadow: 0 0 10px rgba(13, 202, 240, 0.4);
+    }
+
+    .step-text {
+        color: #ffffff;
+        line-height: 1.7;
+        font-size: 0.98rem;
+    }
+
+    .step-title-bold {
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.05rem;
+        display: inline;
+    }
+
+    .timer-text {
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Helper function to get the CSRF token from cookies (more reliable)
+    const rawDataBox = document.getElementById('raw-ai-data');
+    const formattedBox = document.getElementById('formatted-steps');
+
+    if (rawDataBox && formattedBox) {
+        let rawText = rawDataBox.innerText.trim();
+        rawText = rawText.replace(/^\[('|")/, '').replace(/('|")\]$/, '');
+        let steps = rawText.split(/', '|" , "| - /);
+        
+        let htmlContent = '';
+        steps.forEach((step, index) => {
+            if (step.trim().length > 5) {
+                // CLEAN ALL ASTERISKS
+                let cleanStep = step.trim().replace(/\*/g, '');
+                
+                let titlePart = '';
+                let descPart = cleanStep;
+                
+                // DETECT COLON FOR BOLDING
+                if (cleanStep.includes(':')) {
+                    let parts = cleanStep.split(':');
+                    titlePart = `<span class="step-title-bold">${parts[0].trim()}:</span>`;
+                    descPart = parts.slice(1).join(':').trim();
+                }
+
+                htmlContent += `
+                    <div class="ai-step-card shadow-sm">
+                        <div class="step-number">${index + 1}</div>
+                        <div class="step-text">${titlePart} ${descPart}</div>
+                    </div>
+                `;
+            }
+        });
+        
+        formattedBox.innerHTML = htmlContent || `<div class="text-secondary small">No detailed steps found.</div>`;
+    }
+});
+
+function checkDeadline(taskId) {
+    const d1 = new Date(document.getElementById('deadline-' + taskId).innerText.trim());
+    const d2 = new Date(document.getElementById('date-input-' + taskId).value);
+    d1.setHours(0,0,0,0); d2.setHours(0,0,0,0);
+    const alertDiv = document.getElementById('alert-' + taskId);
+    const card = document.getElementById('card-' + taskId);
+    if (d2 > d1) {
+        alertDiv.classList.remove('d-none');
+        card.style.border = "2px solid #ff4d4d"; 
+    } else {
+        alertDiv.classList.add('d-none');
+        card.style.border = "none";
+        card.style.borderLeft = "5px solid var(--accent-color)";
+    }
+}
+
+function validateDate(taskId) {
+    const d1 = new Date(document.getElementById('deadline-' + taskId).innerText.trim());
+    const d2 = new Date(document.getElementById('date-input-' + taskId).value);
+    d1.setHours(0,0,0,0); d2.setHours(0,0,0,0);
+    if (d2 > d1) return confirm("Warning: Past deadline. Proceed?");
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -182,77 +341,32 @@ document.addEventListener('DOMContentLoaded', function() {
         return cookieValue;
     }
     const csrfToken = getCookie('csrftoken');
-
     const startBtn = document.getElementById('start-btn');
-    const addTimeBtn = document.getElementById('add-time-btn');
     const timerDisplay = document.getElementById('timer-display');
     let timerInterval;
 
     {% if active_task %}
-    const taskId = {{ active_task.id }};
-
-    // If a timer was already running when the page loaded, resume it
-    {% if active_task.timer_start_time and active_task.timer_seconds_remaining > 0 %}
-        const serverStartTime = new Date("{{ active_task.timer_start_time.isoformat }}").getTime();
-        const nowTime = new Date().getTime();
-        const elapsedSeconds = Math.floor((nowTime - serverStartTime) / 1000);
-        const remainingSeconds = {{ active_task.timer_seconds_remaining }} - elapsedSeconds;
-
-        if (remainingSeconds > 0) {
-            startTimer(remainingSeconds);
-            startBtn.classList.add('d-none');
-            addTimeBtn.classList.remove('d-none');
-        }
-    {% endif %}
-
-    startBtn.addEventListener('click', () => {
-        fetch(`/task/start/${taskId}/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                startTimer(data.seconds);
-                startBtn.classList.add('d-none');
-                addTimeBtn.classList.remove('d-none');
-            }
+    const activeTaskId = "{{ active_task.id }}";
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            fetch(`/task/start/${activeTaskId}/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
+            }).then(response => response.json()).then(data => {
+                if (data.status === 'ok') {
+                    startTimer(data.seconds);
+                    startBtn.classList.add('d-none');
+                }
+            });
         });
-    });
-
-    addTimeBtn.addEventListener('click', () => {
-        fetch(`/task/add_time/${taskId}/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'ok' && timerInterval) {
-                clearInterval(timerInterval);
-                startTimer(data.seconds);
-            }
-        });
-    });
-
+    }
     function startTimer(duration) {
         let timer = duration;
-        
         clearInterval(timerInterval);
-
         timerInterval = setInterval(function () {
-            if (timer < 0) {
-                clearInterval(timerInterval);
-                timerDisplay.textContent = "Time's up!";
-            } else {
-                let minutes = parseInt(timer / 60, 10);
-                let seconds = parseInt(timer % 60, 10);
-
-                minutes = minutes < 10 ? "0" + minutes : minutes;
-                seconds = seconds < 10 ? "0" + seconds : seconds;
-
-                timerDisplay.textContent = minutes + ":" + seconds;
-                timer--;
-            }
+            let m = parseInt(timer / 60, 10), s = parseInt(timer % 60, 10);
+            timerDisplay.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+            if (--timer < 0) { clearInterval(timerInterval); timerDisplay.textContent = "DONE!"; }
         }, 1000);
     }
     {% endif %}

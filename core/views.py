@@ -8,8 +8,15 @@ from django.contrib import messages
 from itertools import groupby
 from .ai_service import call_groq_api, generate_study_plan_with_ai
 from django.db.models import Q
+from .models import Team, Todo
 import re
 import markdown as md
+from django.core.mail import send_mail
+from django.conf import settings
+import random
+from .models import OTPVerification
+from django.contrib import messages
+from better_profanity import profanity
 
 
 from .ai_service import (
@@ -195,72 +202,53 @@ def view_study_plan_view(request, plan_id):
     }
     return render(request, 'core/view_study_plan.html', context)
 
+# core/views.py
+from django.db.models import Q
+from .models import Todo, Profile, StudyPlan # Dono models ko import karein
+
+# core/views.py
+from django.db.models import Q
+from .models import Todo, Profile, StudyPlan
+
 
 @login_required
 def personal_dashboard_view(request):
     user = request.user
     profile, created = Profile.objects.get_or_create(user=user)
-    today = timezone.now().date()
-    
-    # Active plan
-    active_plan = StudyPlan.objects.filter(user=user, is_active=True).first()
 
-    # Base queries
-    personal_tasks_query = Q(user=user, team=None, status__in=['INBOX', 'ACTIVE'])
-    team_tasks_query = Q(assignee=user, team__isnull=False, status__in=['INBOX', 'ACTIVE'])
+    # Bina date waale team tasks
+    assigned_tasks = Todo.objects.filter(assignee=user, scheduled_date__isnull=True, status='INBOX')
     
-   
-    plan_tasks_today_or_upcoming = Q()
-    if active_plan:
-        plan_tasks_today_or_upcoming |= Q(study_plan=active_plan, scheduled_date=today, status__in=['INBOX', 'ACTIVE'])
-        next_plan_task = Task.objects.filter(study_plan=active_plan, status__in=['INBOX', 'ACTIVE'], scheduled_date__gte=today).order_by('scheduled_date').first()
-        if next_plan_task:
-            plan_tasks_today_or_upcoming |= Q(pk=next_plan_task.pk)
-    
-    all_my_tasks = Task.objects.filter(
-        personal_tasks_query | team_tasks_query | plan_tasks_today_or_upcoming
-    ).order_by('created').distinct()
-    
-  
-    show_mood = bool(request.session.pop('show_mood_prompt', False))
-    suppress_auto = bool(request.session.pop('suppress_auto_activate', False))
+    # SARE TASKS (Personal + Team + Study Plan)
+    # Exclude logic zaroori hai taaki 'assigned_tasks' aur 'active' yahan na dikhein
+    all_my_tasks = Todo.objects.filter(
+        Q(user=user) | Q(assignee=user)
+    ).exclude(status='DELETED').distinct().order_by('scheduled_date', 'created')
 
-   
+    print(f"--- SMART PLANNER DEBUG ---")
+    print(f"User: {user.username} | Total Todos in DB: {all_my_tasks.count()}")
+
     active_task = all_my_tasks.filter(status='ACTIVE').first()
-
-    if not active_task:
-        if not show_mood and not suppress_auto:
-            
-            if active_plan:
-                next_plan = Task.objects.filter(study_plan=active_plan, status__in=['INBOX', 'ACTIVE']).order_by('scheduled_date','created').first()
-                if next_plan:
-                    active_task = next_plan
-        
-            if not active_task:
-                active_task = all_my_tasks.filter(status='INBOX').order_by('created').first()
-                if active_task:
-                    active_task.status = 'ACTIVE'
-                    active_task.save()
-        else:
-           
-            active_task = None
-
-    pending_tasks = all_my_tasks.filter(status='INBOX')
-    can_add_task = True
-    xp_for_next_level = profile.level * 100
-
+    show_mood = True if not active_task else False
+    
+    # UP NEXT: Inbox waale wo tasks jo upar assigned section mein nahi hain
+    pending_tasks = all_my_tasks.filter(status='INBOX').exclude(
+        id__in=assigned_tasks.values_list('id', flat=True)
+    )
+    if active_task:
+        pending_tasks = pending_tasks.exclude(id=active_task.id)
+    
     context = {
         'active_task': active_task,
-        'pending_tasks': pending_tasks,
+        'pending_tasks': pending_tasks, # Ab ye line se dikhenge
         'profile': profile,
-        'can_add_task': can_add_task,
-        'xp_for_next_level': xp_for_next_level,
-       
+        'assigned_tasks': assigned_tasks,
+        'xp_for_next_level': profile.level * 100,
         'show_mood': show_mood,
-        
         'show_add_forms': True,
     }
     return render(request, 'core/main.html', context)
+
 
 @login_required
 def createtodo_ai(request):
@@ -282,6 +270,7 @@ def createtodo_ai(request):
                 time_estimate_minutes=time_estimate, 
                 sub_tasks=sub_tasks_list,
                 status='INBOX',
+                priority=2,
                 team=None,
                 memo='' 
             )
@@ -290,6 +279,12 @@ def createtodo_ai(request):
             if not Task.objects.filter(user=user, status='ACTIVE', team=None).exists():
                 new_task.status = 'ACTIVE' 
                 new_task.save()
+
+            if isinstance(sub_tasks_list, list):
+                 sub_tasks_list = " ".join(sub_tasks_list)
+
+           
+
             
     return redirect('personal_dashboard')
 
@@ -298,15 +293,25 @@ def createtodo_ai(request):
 def add_task_manual(request):
     if request.method == 'POST':
         user = request.user
-        
-        
         title = request.POST.get('title')
+        priority_val = request.POST.get('priority', 2)
+        
+        # --- NAYI DATE VALUE LO ---
+        scheduled_date = request.POST.get('scheduled_date')
+        
+        # Agar user date nahi dalta (waise humne required kiya hai), 
+        # toh default aaj ki date rakho
+        if not scheduled_date:
+            scheduled_date = timezone.now().date()
+
         if title:
-            new_task = Task.objects.create(user=user, title=title, status='INBOX', memo='')
-            
-            if not Task.objects.filter(user=user, status='ACTIVE', team=None).exists():
-                new_task.status = 'ACTIVE'
-                new_task.save()
+            Task.objects.create(
+                user=user, 
+                title=title, 
+                status='INBOX', 
+                priority=priority_val,
+                scheduled_date=scheduled_date # Database mein save karo
+            )
             
     return redirect('personal_dashboard')
 
@@ -440,25 +445,42 @@ def reset_history_view(request):
 def suggest_task_by_mood(request, difficulty):
     user = request.user
     
-  
-    suggested_task = Task.objects.filter(
-        user=user, 
-        status='INBOX', 
+    # 1. Purane active task ko dhoondh kar INBOX mein waapas bhejo
+    active_task = Task.objects.filter(
+        Q(assignee=user) | Q(user=user, team=None),
+        status='ACTIVE'
+    ).first()
+    
+    if active_task:
+        active_task.status = 'INBOX'
+        active_task.save()
+
+    # 2. Mood ke hisaab se naya task dhoondho (jo personal ho YA team ka ho)
+    #    Snoozed tasks ko ignore karo
+    #    Sabse pehle High Priority, fir sabse purana
+    tasks_query = Task.objects.filter(
+        Q(assignee=user) | Q(user=user, team=None),
+        status='INBOX',
         difficulty=difficulty
-    ).order_by('created').first()
+    ).exclude(snoozed_until__gt=timezone.now()).order_by('-priority', 'created')
 
-    # Fallback logic
+    suggested_task = tasks_query.first()
+
+    # 3. Fallback logic: Agar uss difficulty ka task na mile, to koi bhi pending task le lo
     if not suggested_task:
-        suggested_task = Task.objects.filter(user=user, status='INBOX').order_by('created').first()
+        suggested_task = Task.objects.filter(
+            Q(assignee=user) | Q(user=user, team=None),
+            status='INBOX'
+        ).exclude(snoozed_until__gt=timezone.now()).order_by('-priority', 'created').first()
 
- 
+    # 4. Naye task ko ACTIVE banao
     if suggested_task:
-        
         suggested_task.status = 'ACTIVE'
         suggested_task.save()
         messages.success(request, f"New task activated: '{suggested_task.title}'")
     else:
-        messages.error(request, "No pending tasks found to activate.")
+        # Agar inbox khaali hai, to koi error nahi, bas message do
+        messages.warning(request, "No pending tasks found to activate.")
         
     return redirect('personal_dashboard')
 
@@ -598,103 +620,62 @@ def invite_member_view(request, team_id):
 
 @login_required
 def add_plan_day_tasks_view(request, plan_id, day_str):
-    """
-    Adds tasks for a specific day from the plan to the user's main list.
-    - Robustly parses different Day header styles.
-    - Ensures required NOT NULL fields are provided (memo, category, etc).
-    - Sets session['suppress_auto_activate'] to avoid immediate activation on dashboard.
-    """
-    if request.method != 'POST':
-        return redirect('view_study_plan', plan_id=plan_id)
-
-    user = request.user
-    plan = get_object_or_404(StudyPlan, id=plan_id, user=user)
-
-    try:
-        day_num_str = re.findall(r'\d+', day_str)[0]
-        day_index = int(day_num_str) - 1
-    except (IndexError, ValueError, TypeError):
-        messages.error(request, "Invalid day format.")
-        return redirect('view_study_plan', plan_id=plan.id)
-
-    text = plan.generated_plan or ""
-
-   
-    header_pattern = re.compile(
-        r'(?:^|\n)(?P<header>(?:##\s*Day\s*\d+\s*:?.*?)|(?:\*\*\s*Day\s*\d+\s*.*?\*\*))\s*(?:\n|$)',
-        flags=re.IGNORECASE
-    )
-    headers = list(header_pattern.finditer(text))
-
-    day_sections = []
-    if headers:
-        for i, m in enumerate(headers):
-            start = m.end()
-            end = headers[i+1].start() if i+1 < len(headers) else len(text)
-            header_text = m.group('header').strip()
-            content = text[start:end].strip()
-            day_sections.append((header_text, content))
-    else:
-       
-        fallback = re.split(r'(?:##\s*Day\s+\d+|^\*\*\s*Day\s+\d+)', text, flags=re.IGNORECASE | re.MULTILINE)
-        if len(fallback) > 1:
-            for chunk in fallback[1:]:
-                day_sections.append(("Day", chunk.strip()))
-        else:
-            day_sections = []
-
-    if not (0 <= day_index < len(day_sections)):
-        messages.error(request, f"Could not find tasks for {day_str}.")
-        return redirect('view_study_plan', plan_id=plan.id)
-
-    _, day_content = day_sections[day_index]
-
-   
-    task_lines = re.findall(r'(?m)^\s*(?:[-*]|\d+\.)\s*(.+)$', day_content)
-    if not task_lines:
-       
-        task_lines = re.findall(r'(?m)^\s*(?:Task\s*\d+\s*[:\-])\s*(.+)$', day_content, flags=re.IGNORECASE)
-
-    if not task_lines:
-        messages.error(request, f"Could not find tasks for {day_str}.")
-        return redirect('view_study_plan', plan_id=plan.id)
-
-    try:
-        base_date = plan.start_date or timezone.now().date()
-    except Exception:
-        base_date = timezone.now().date()
-    target_date = base_date + timedelta(days=day_index)
-
-    added_count = 0
-    for raw in task_lines:
-        clean = re.sub(r'<[^>]+>', '', raw).strip()  
-        if not clean:
-            continue
-
-        title = f"{plan.subject} (Day {day_index + 1}): {clean}"
+    if request.method == 'POST':
+        plan = get_object_or_404(StudyPlan, id=plan_id, user=request.user)
+        user_selected_date = request.POST.get('manual_scheduled_date')
+        
+        if not user_selected_date:
+            messages.error(request, "Please select a date first!")
+            return redirect('view_study_plan', plan_id=plan.id)
 
         
-        Task.objects.create(
-            user=user,
-            title=title,
-            status='INBOX',
-            difficulty='Moderate',
-            category='Other',
-            memo='',                 # <<-- prevent NOT NULL IntegrityError
-            study_plan=plan,
-            scheduled_date=target_date
-        )
-        added_count += 1
+        lines = plan.generated_plan.splitlines()
+        found_day = False
+        tasks_to_add = []
 
-    if added_count > 0:
-        messages.success(request, f"Added {added_count} tasks from {day_str} to your main dashboard!")
-        request.session['suppress_auto_activate'] = True
-    else:
-        messages.error(request, f"Could not find tasks for {day_str}.")
+        # Day Number nikaalna (e.g., "Day 1" se "1" nikaalna)
+        day_match = re.search(r'Day\s*(\d+)', day_str, re.IGNORECASE)
+        day_num = day_match.group(1) if day_match else None
 
+        for line in lines:
+            line_strip = line.strip()
+            if not line_strip: continue
+
+            # 1. Day Section dhoondhein (Thoda flexible check)
+            # Agar line mein "Day 1" ya "Day 01" hai
+            if not found_day:
+                if day_num and f"Day {day_num}" in line or day_str.lower() in line.lower():
+                    found_day = True
+                    continue
+            
+            # 2. Agar found_day True hai, toh lines collect karein
+            if found_day:
+                # Agar naya Day shuru ho jaye toh ruk jayein
+                if re.match(r'^(#*\s*Day\s*\d+)', line_strip, re.IGNORECASE) and day_num not in line_strip:
+                    break
+                
+                # Task lines: -, *, •, 1. ya bold tasks uthao
+                # Bullets hata kar sirf text rakho
+                clean_task = re.sub(r'^[\s\d\.\-\*\•\#]+', '', line_strip).strip()
+                if clean_task and len(clean_task) > 3: # Chhoti lines skip karo
+                    tasks_to_add.append(clean_task)
+
+        # 3. SAVE LOGIC
+        if not tasks_to_add:
+            print(f"RESULT: No tasks found for {day_str} in the plan text.")
+            messages.warning(request, f"Format Issue: No tasks found for '{day_str}'. Please check the AI Plan text.")
+        else:
+            for title in tasks_to_add:
+                Todo.objects.create(
+                    user=request.user,
+                    title=title,
+                    status='INBOX',
+                    priority=2,
+                    scheduled_date=user_selected_date
+                )
+            messages.success(request, f"Added {len(tasks_to_add)} tasks for {day_str} to your dashboard!")
+            
     return redirect('personal_dashboard')
-
-
 
 
 @login_required
@@ -760,7 +741,6 @@ def profile_view(request):
         'xp_for_next_level': profile.level * 100
     }
     return render(request, 'core/profile.html', context)
-
 @login_required
 def add_team_task_view(request, team_id):
     team = get_object_or_404(Team, id=team_id)
@@ -768,12 +748,16 @@ def add_team_task_view(request, team_id):
     if request.method == 'POST' and request.user in team.members.all():
         title = request.POST.get('title')
         assignee_id = request.POST.get('assignee')
+        deadline = request.POST.get('deadline') # Aapne ye sahi liya hai
 
         if not title:
             messages.error(request, "Task title cannot be empty.")
             return redirect('team_dashboard', team_id=team.id)
 
-        
+        # Logic: Agar deadline empty string hai toh usey None (null) rakho
+        task_deadline = deadline if deadline else None
+
+        # Case 1: Agar task sabko assign karna ho
         if assignee_id == 'all':
             for member in team.members.all():
                 Task.objects.create(
@@ -784,12 +768,13 @@ def add_team_task_view(request, team_id):
                     status='INBOX',
                     difficulty='Moderate',
                     category='Other',
-                    memo='',                 
+                    memo='',
+                    deadline=task_deadline # <-- Ye line add ki hai
                 )
             messages.success(request, f"Task '{title}' assigned to all team members.")
             return redirect('team_dashboard', team_id=team.id)
 
-     
+        # Case 2: Agar kisi specific member ya inbox ko assign karna ho
         assignee = None
         if assignee_id:
             try:
@@ -805,7 +790,8 @@ def add_team_task_view(request, team_id):
             status='INBOX',
             difficulty='Moderate',
             category='Other',
-            memo='',  
+            memo='',
+            deadline=task_deadline 
         )
 
         if assignee:
@@ -814,7 +800,6 @@ def add_team_task_view(request, team_id):
             messages.success(request, f"Task '{title}' added to team inbox.")
 
     return redirect('team_dashboard', team_id=team.id)
-
 
 @login_required
 def plan_list(request):
@@ -829,3 +814,164 @@ def plan_list(request):
     }
     return render(request, 'core/plan_list.html', context)
 
+def signup_view(request):
+    if request.method == 'POST':
+        # Use .get() to avoid MultiValueDictKeyError
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        if profanity.contains_profanity(username):
+            messages.error(request, "Bhai, ye username allowed nahi hai. Kuch dhang ka rakho!")
+            return redirect('signup')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already taken.")
+            return redirect('signup')
+        
+        # 1. User create karo par deactivate rakho (Secure way)
+        user = User.objects.create_user(username=username, email=email, password=password)
+        user.is_active = False 
+        user.save()
+
+        # 2. OTP generate aur DB mein save
+        otp_code = str(random.randint(100000, 999999))
+        OTPVerification.objects.create(user=user, otp=otp_code)
+
+        # 3. Session mein sirf user ID rakho (No password!)
+        request.session['verify_user_id'] = user.id
+
+        # Send Email Logic
+        try:
+            send_mail("Verify Account", f"Your OTP: {otp_code}", settings.DEFAULT_FROM_EMAIL, [email])
+            return redirect('verify_otp')
+        except:
+            user.delete() # Cleanup if mail fails
+            messages.error(request, "Email failed.")
+            return redirect('signup')
+
+    return render(request, 'registration/signup.html')
+
+def verify_otp_view(request):
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        user_id = request.session.get('verify_user_id')
+        
+        if not user_id:
+            return redirect('signup')
+
+        try:
+            user = User.objects.get(id=user_id)
+            otp_obj = OTPVerification.objects.get(user=user, otp=entered_otp)
+            
+            # Success! Activate user
+            user.is_active = True
+            user.save()
+            otp_obj.delete() # OTP use ho gaya toh delete kardo
+            del request.session['verify_user_id']
+            
+            messages.success(request, "Verified! Login now.")
+            return redirect('login')
+        except:
+            messages.error(request, "Invalid OTP.")
+    
+    return render(request, 'registration/verify_otp.html')
+
+
+def signup_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username').strip()
+        email = request.POST.get('email').strip().lower()
+        password = request.POST.get('password')
+
+        # 1. Profanity Check
+        clean_username = re.sub(r'[^a-zA-Z]', '', username).lower()
+        if profanity.contains_profanity(username) or profanity.contains_profanity(clean_username):
+            messages.error(request, "Username contains prohibited words.")
+            return redirect('signup')
+
+        # 2. Existence Check
+        if User.objects.filter(username__iexact=username).exists():
+            messages.error(request, "Username already exists.")
+            return redirect('signup')
+        
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, "Email already registered.")
+            return redirect('signup')
+
+        # 3. Password Validation (Double check this during signup!)
+        if len(password) < 8 or not re.search(r'[A-Z]', password) or \
+           not re.search(r'[a-z]', password) or not re.search(r'[0-9]', password) or \
+           not re.search(r'[@$!%*?&]', password):
+            messages.error(request, "Password must be 8+ chars with Upper, Lower, Number, and Special char.")
+            return redirect('signup')
+
+        try:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.is_active = False 
+            user.save()
+
+            otp_code = str(random.randint(100000, 999999))
+            OTPVerification.objects.create(user=user, otp=otp_code)
+
+            subject = "Verify your Smart Planner Account"
+            message = f"Hello {username},\n\nYour code is: {otp_code}"
+            
+            # Send Mail
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+            
+            request.session['verify_user_id'] = user.id
+            request.session['temp_email'] = email 
+            return redirect('verify_otp')
+
+        except Exception as e:
+            print(f"MAIL ERROR: {e}") # CHECK YOUR TERMINAL FOR THIS
+            if 'user' in locals():
+                user.delete()
+            messages.error(request, f"Mail delivery failed: {e}")
+            return redirect('signup')
+
+    return render(request, 'registration/signup.html')
+
+@login_required
+def assign_task_to_member_view(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        team_id = request.POST.get('team_id')
+        assignee_id = request.POST.get('assignee_id')
+        deadline = request.POST.get('deadline') # Jo naya field aapne add kiya
+        
+        team = get_object_or_404(Team, id=team_id, owner=request.user)
+        assignee = get_object_or_404(User, id=assignee_id)
+
+        # Todo table mein naya task create karna
+        Todo.objects.create(
+            user=request.user,       # Kisne banaya (Leader)
+            title=title,
+            team=team,               # Kis team ke liye hai
+            assignee=assignee,       # Kisko kaam diya gaya hai
+            deadline=deadline,       # Leader ki di hui deadline
+            status='INBOX',          # Default status
+            priority=3               # Team tasks high priority
+        )
+        
+        messages.success(request, f"Task assigned to {assignee.username} successfully!")
+        return redirect('team_dashboard') # Jahan aap team tasks dekhte hain
+    
+def schedule_assigned_task_view(request, task_id):
+    # 1. Sirf wahi task uthao jahan current user 'assignee' hai
+    task = get_object_or_404(Todo, id=task_id, assignee=request.user)
+    
+    if request.method == 'POST':
+        user_date = request.POST.get('my_schedule_date')
+        
+        if user_date:
+            # 2. Member ki chuni hui date ko 'scheduled_date' mein save karo
+            task.scheduled_date = user_date
+            task.save()
+            
+            messages.success(request, f"Task '{task.title}' scheduled for {user_date}!")
+        else:
+            messages.error(request, "Please select a date first.")
+            
+    return redirect('personal_dashboard')

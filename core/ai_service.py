@@ -1,14 +1,21 @@
-# core/ai_service.py
 import os
 import re
+from pathlib import Path
+
+from dotenv import load_dotenv
 from groq import Groq
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
+
 def call_groq_api(prompt):
     API_KEY = os.environ.get("GROQ_API_KEY")
+
     if not API_KEY:
         print("ERROR: GROQ_API_KEY not set.")
         return ""
+        
     try:
         client = Groq(api_key=API_KEY)
         chat_completion = client.chat.completions.create(
@@ -21,7 +28,6 @@ def call_groq_api(prompt):
         return ""
 
 
-
 def get_task_category_with_ai(sentence):
     """
     Uses the Groq API to determine the category of a task.
@@ -31,7 +37,6 @@ def get_task_category_with_ai(sentence):
     raw_output = call_groq_api(prompt)
     print(f"AI Raw Output (Category): {raw_output}")
     for category in categories.split(', '):
-        
         if re.search(r'\b' + re.escape(category) + r'\b', raw_output, re.IGNORECASE):
             return category
     return "Other"
@@ -44,10 +49,10 @@ def get_task_difficulty_with_ai(sentence):
     raw_output = call_groq_api(prompt)
     print(f"AI Raw Output (Difficulty): {raw_output}")
     for difficulty in difficulties.split(', '):
-       
         if re.search(r'\b' + re.escape(difficulty) + r'\b', raw_output, re.IGNORECASE):
             return difficulty
     return "Moderate"
+
 
 def get_time_estimate_with_ai(sentence, difficulty):
     """AI se task ka time estimate (minutes me) pata karta hai."""
@@ -143,7 +148,6 @@ def generate_study_plan_with_ai(subject, goal, duration_days):
     plan_text = call_groq_api(prompt + f'\nNOW, DO THE SAME FOR: "{subject}" with the goal "{goal}"\nYOUR OUTPUT:')
     print(f"AI Raw Output (Plan): {plan_text}")
 
-   
     processed_text = re.sub(r'\*\*(.*?)\*\*', r'<strong style="color: var(--accent-color);">\1</strong>', plan_text)
     processed_text = re.sub(r'[\*\_]([^\*\_]+)[\*\_]', r'<em style="color: #bdbdbd; font-style: italic;">\1</em>', processed_text)
 

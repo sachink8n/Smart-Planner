@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-lg p-4" style="background: #1e1e1e; border-radius: 20px; border-top: 5px solid #0dcaf0 !important;">
+            <div class="text-center mb-4">
+                <h3 class="text-white fw-bold">Verify Account</h3>
+                <p class="text-secondary small">Bhai, apni email check kar aur 6-digit code yahan daal.</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <input type="text" name="otp" class="form-control form-control-lg text-center otp-input" 
+                           placeholder="0 0 0 0 0 0" maxlength="6" required>
+                </div>
+
+                <button type="submit" class="btn btn-accent w-100 py-3 fw-bold glow-button">VERIFY & ACTIVATE</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="text-secondary small mb-1">OTP nahi mila?</p>
+                <div id="resend-timer" class="text-info fw-bold">Resend in <span id="seconds">60</span>s</div>
+                <a href="{% url 'resend_otp' %}" id="resend-btn" class="btn btn-link text-info d-none p-0 fw-bold">Resend OTP Now</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom Teal Glow for Input */
+    .otp-input {
+        background: #141414 !important;
+        border: 2px solid #2e2e2e !important;
+        color: #0dcaf0 !important;
+        letter-spacing: 15px;
+        font-size: 1.5rem !important;
+        font-weight: 800;
+        transition: all 0.3s ease;
+    }
+    .otp-input:focus {
+        border-color: #0dcaf0 !important;
+        box-shadow: 0 0 20px rgba(13, 202, 240, 0.4) !important;
+        outline: none;
+    }
+    .glow-button:hover {
+        box-shadow: 0 0 25px rgba(13, 202, 240, 0.6);
+        transform: translateY(-2px);
+    }
+</style>
+
+<script>
+    // 60 Seconds Countdown Logic
+    let timeLeft = 60;
+    const timerDisplay = document.getElementById('seconds');
+    const timerBox = document.getElementById('resend-timer');
+    const resendBtn = document.getElementById('resend-btn');
+
+    let countdown = setInterval(function() {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            timerBox.classList.add('d-none');
+            resendBtn.classList.remove('d-none');
+        }
+    }, 1000);
+</script>
+{% endblock %}
