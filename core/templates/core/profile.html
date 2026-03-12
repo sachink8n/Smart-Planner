@@ -35,6 +35,21 @@
                 {% endfor %}
             </div>
         </div>
+
+        <div class="form-card mt-4">
+            <h3 class="mb-3"><i class="fas fa-chart-pie" style="color: var(--accent-color);"></i> Productivity Pattern</h3>
+            {% if productivity_total_points > 0 %}
+                <p class="text-secondary mb-3">
+                    You are most effective in: <strong style="color: var(--accent-color);">{{ productivity_best_slot }}</strong>
+                </p>
+                <div class="chart-wrap">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Complete some tasks first to unlock your productivity chart.</p>
+            {% endif %}
+        </div>
+
          <div class="text-center mt-4">
             <a href="{% url 'personal_dashboard' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
         </div>
@@ -54,5 +69,48 @@
         filter: grayscale(100%);
         opacity: 0.3;
     }
+    .chart-wrap {
+        max-width: 460px;
+        margin: 0 auto;
+    }
 </style>
+
+{% if productivity_total_points > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ work_time_labels|json_script:"work-time-labels" }}
+{{ work_time_counts|json_script:"work-time-counts" }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const labels = JSON.parse(document.getElementById('work-time-labels').textContent);
+    const values = JSON.parse(document.getElementById('work-time-counts').textContent);
+    const canvas = document.getElementById('productivityChart');
+    if (!canvas) {
+        return;
+    }
+
+    new Chart(canvas, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: ['#00bcd4', '#27ae60', '#f1c40f', '#e67e22', '#8e44ad'],
+                borderColor: '#121212',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#e6e6e6',
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

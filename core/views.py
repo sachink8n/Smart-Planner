@@ -9,6 +9,8 @@ from django.contrib import messages
 from itertools import groupby
 from .ai_service import call_groq_api, generate_study_plan_with_ai
 from django.db.models import Q
+from django.db.models import Count
+from django.db.models.functions import ExtractHour
 from .models import Team, Todo
 import re
 import markdown as md
@@ -804,11 +806,46 @@ def profile_view(request):
     
     earned_badges = UserBadge.objects.filter(user=request.user).values_list('badge_id', flat=True)
 
+    work_buckets = {
+        'Early Morning (5-9)': 0,
+        'Morning (9-12)': 0,
+        'Afternoon (12-17)': 0,
+        'Evening (17-21)': 0,
+        'Night (21-5)': 0,
+    }
+    hourly_data = (
+        Task.objects.filter(user=request.user, status='COMPLETED', datecompleted__isnull=False)
+        .annotate(hour=ExtractHour('datecompleted'))
+        .values('hour')
+        .annotate(total=Count('id'))
+    )
+
+    for item in hourly_data:
+        hour = item['hour']
+        total = item['total']
+        if 5 <= hour < 9:
+            work_buckets['Early Morning (5-9)'] += total
+        elif 9 <= hour < 12:
+            work_buckets['Morning (9-12)'] += total
+        elif 12 <= hour < 17:
+            work_buckets['Afternoon (12-17)'] += total
+        elif 17 <= hour < 21:
+            work_buckets['Evening (17-21)'] += total
+        else:
+            work_buckets['Night (21-5)'] += total
+
+    productivity_best_slot = max(work_buckets, key=work_buckets.get)
+    productivity_total_points = sum(work_buckets.values())
+
     context = {
         'profile': profile,
         'all_badges': all_badges,
         'earned_badges': earned_badges,
-        'xp_for_next_level': profile.level * 100
+        'xp_for_next_level': profile.level * 100,
+        'work_time_labels': list(work_buckets.keys()),
+        'work_time_counts': list(work_buckets.values()),
+        'productivity_best_slot': productivity_best_slot,
+        'productivity_total_points': productivity_total_points,
     }
     return render(request, 'core/profile.html', context)
 @login_required
