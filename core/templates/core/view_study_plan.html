@@ -40,13 +40,19 @@
     </form>
 </div>
                 
-                <ul class="steps-list"> 
+                <div class="plan-tasks-list">
                     {% for task_html in tasks %}
-                         <li>{{ task_html|safe }}</li> 
+                        <div class="plan-task-item">
+                            <span class="plan-task-tick">✓</span>
+                            <span class="plan-task-text">{{ task_html|safe }}</span>
+                        </div>
                     {% empty %}
-                        <li>No specific tasks generated for this day.</li>
+                        <div class="plan-task-item">
+                            <span class="plan-task-tick">✓</span>
+                            <span class="plan-task-text">No specific tasks generated for this day.</span>
+                        </div>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
         {% empty %}
              <div class="form-card text-center">
@@ -60,27 +66,35 @@
 </div>
 
 <style>
-    .steps-list {
-        list-style-type: none;
-        padding-left: 0;
+    .plan-tasks-list {
         margin-top: 1rem;
     }
 
-    .steps-list li {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+    .plan-task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.07);
         border-radius: 10px;
-        padding: 0.7rem 0.9rem;
-        margin-bottom: 0.65rem;
-        line-height: 1.55;
-        color: var(--text-primary);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.6rem;
+        line-height: 1.6;
     }
 
-    .steps-list li::before {
-        content: '✓';
-        color: var(--btn-success);
+    .plan-task-tick {
+        flex-shrink: 0;
+        color: #4caf50;
         font-weight: 700;
-        margin-right: 0.55rem;
+        font-size: 1rem;
+        margin-top: 0.05rem;
+    }
+
+    .plan-task-text {
+        color: var(--text-primary);
+        font-size: 0.97rem;
+        word-break: break-word;
+        flex: 1;
     }
 </style>
 {% endblock %}
