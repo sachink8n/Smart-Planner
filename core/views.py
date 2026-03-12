@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta, date
 from django.http import JsonResponse
+from django.db import transaction
 from .models import Todo as Task, Profile, Badge, UserBadge, Team, User, StudyPlan
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -814,124 +815,136 @@ def plan_list(request):
     }
     return render(request, 'core/plan_list.html', context)
 
-def signup_view(request):
-    if request.method == 'POST':
-        # Use .get() to avoid MultiValueDictKeyError
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+def _is_local_request(request):
+    host = request.get_host().split(':', 1)[0].lower()
+    return host in {'127.0.0.1', 'localhost'}
 
-        if profanity.contains_profanity(username):
-            messages.error(request, "Bhai, ye username allowed nahi hai. Kuch dhang ka rakho!")
-            return redirect('signup')
 
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already taken.")
-            return redirect('signup')
-        
-        # 1. User create karo par deactivate rakho (Secure way)
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.is_active = False 
-        user.save()
+def _get_pending_signup_user(username, email):
+    username_match = User.objects.filter(username__iexact=username).first()
+    email_match = User.objects.filter(email__iexact=email).first()
 
-        # 2. OTP generate aur DB mein save
-        otp_code = str(random.randint(100000, 999999))
-        OTPVerification.objects.create(user=user, otp=otp_code)
+    if username_match and username_match.is_active:
+        return None, "Username already exists."
 
-        # 3. Session mein sirf user ID rakho (No password!)
-        request.session['verify_user_id'] = user.id
+    if email_match and email_match.is_active:
+        return None, "Email already registered."
 
-        # Send Email Logic
-        try:
-            send_mail("Verify Account", f"Your OTP: {otp_code}", settings.DEFAULT_FROM_EMAIL, [email])
-            return redirect('verify_otp')
-        except:
-            user.delete() # Cleanup if mail fails
-            messages.error(request, "Email failed.")
-            return redirect('signup')
+    if username_match and email_match and username_match.id != email_match.id:
+        return None, "Username or email is already linked to another pending account."
 
-    return render(request, 'registration/signup.html')
-
-def verify_otp_view(request):
-    if request.method == 'POST':
-        entered_otp = request.POST.get('otp')
-        user_id = request.session.get('verify_user_id')
-        
-        if not user_id:
-            return redirect('signup')
-
-        try:
-            user = User.objects.get(id=user_id)
-            otp_obj = OTPVerification.objects.get(user=user, otp=entered_otp)
-            
-            # Success! Activate user
-            user.is_active = True
-            user.save()
-            otp_obj.delete() # OTP use ho gaya toh delete kardo
-            del request.session['verify_user_id']
-            
-            messages.success(request, "Verified! Login now.")
-            return redirect('login')
-        except:
-            messages.error(request, "Invalid OTP.")
-    
-    return render(request, 'registration/verify_otp.html')
+    return username_match or email_match, None
 
 
 def signup_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username').strip()
-        email = request.POST.get('email').strip().lower()
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
 
-        # 1. Profanity Check
+        if not username or not email or not password:
+            messages.error(request, "Username, email, and password are required.")
+            return redirect('signup')
+
         clean_username = re.sub(r'[^a-zA-Z]', '', username).lower()
         if profanity.contains_profanity(username) or profanity.contains_profanity(clean_username):
             messages.error(request, "Username contains prohibited words.")
             return redirect('signup')
 
-        # 2. Existence Check
-        if User.objects.filter(username__iexact=username).exists():
-            messages.error(request, "Username already exists.")
-            return redirect('signup')
-        
-        if User.objects.filter(email__iexact=email).exists():
-            messages.error(request, "Email already registered.")
+        pending_user, conflict_message = _get_pending_signup_user(username, email)
+        if conflict_message:
+            messages.error(request, conflict_message)
             return redirect('signup')
 
-        # 3. Password Validation (Double check this during signup!)
         if len(password) < 8 or not re.search(r'[A-Z]', password) or \
            not re.search(r'[a-z]', password) or not re.search(r'[0-9]', password) or \
            not re.search(r'[@$!%*?&]', password):
             messages.error(request, "Password must be 8+ chars with Upper, Lower, Number, and Special char.")
             return redirect('signup')
 
-        try:
-            user = User.objects.create_user(username=username, email=email, password=password)
-            user.is_active = False 
-            user.save()
+        otp_code = str(random.randint(100000, 999999))
 
-            otp_code = str(random.randint(100000, 999999))
-            OTPVerification.objects.create(user=user, otp=otp_code)
+        try:
+            with transaction.atomic():
+                user = pending_user or User(username=username, email=email, is_active=False)
+                user.username = username
+                user.email = email
+                user.is_active = False
+                user.set_password(password)
+                user.save()
+
+                otp_obj, _ = OTPVerification.objects.get_or_create(user=user)
+                otp_obj.otp = otp_code
+                otp_obj.created_at = timezone.now()
+                otp_obj.save(update_fields=['otp', 'created_at'])
 
             subject = "Verify your Smart Planner Account"
-            message = f"Hello {username},\n\nYour code is: {otp_code}"
-            
-            # Send Mail
+            message = (
+                f"Hello {username},\n\n"
+                f"Your Smart Planner verification code is: {otp_code}\n"
+                "This code is valid for 5 minutes."
+            )
+
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
-            
+
             request.session['verify_user_id'] = user.id
-            request.session['temp_email'] = email 
+            request.session['temp_email'] = email
+            messages.success(request, "Verification code sent successfully.")
             return redirect('verify_otp')
 
         except Exception as e:
-            print(f"MAIL ERROR: {e}") # CHECK YOUR TERMINAL FOR THIS
-            if 'user' in locals():
-                user.delete()
+            request.session['verify_user_id'] = user.id
+            request.session['temp_email'] = email
+            if _is_local_request(request):
+                messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
+                return redirect('verify_otp')
+
             messages.error(request, f"Mail delivery failed: {e}")
             return redirect('signup')
 
     return render(request, 'registration/signup.html')
+
+
+def verify_otp_view(request):
+    user_id = request.session.get('verify_user_id')
+    if not user_id:
+        messages.error(request, "Please sign up first.")
+        return redirect('signup')
+
+    user = User.objects.filter(id=user_id, is_active=False).first()
+    if not user:
+        request.session.pop('verify_user_id', None)
+        request.session.pop('temp_email', None)
+        messages.error(request, "Signup session expired. Please try again.")
+        return redirect('signup')
+
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp', '').strip()
+        otp_obj = OTPVerification.objects.filter(user=user).first()
+
+        if not otp_obj:
+            messages.error(request, "Verification code not found. Please sign up again.")
+            return redirect('signup')
+
+        if not otp_obj.is_valid():
+            otp_obj.delete()
+            messages.error(request, "OTP expired. Please sign up again to get a new code.")
+            return redirect('signup')
+
+        if otp_obj.otp != entered_otp:
+            messages.error(request, "Invalid OTP.")
+            return redirect('verify_otp')
+
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        otp_obj.delete()
+        request.session.pop('verify_user_id', None)
+        request.session.pop('temp_email', None)
+
+        messages.success(request, "Verified! Login now.")
+        return redirect('login')
+
+    return render(request, 'registration/verify_otp.html')
 
 @login_required
 def assign_task_to_member_view(request):

@@ -1,83 +1,38 @@
 {% extends 'core/base.html' %}
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
-    <div class="col-12 col-md-8 col-lg-5">
-        <div class="auth-card p-5 shadow-lg"> 
-            <div class="text-center mb-5">
-                <div class="icon-circle mb-3">
-                    <i class="fas fa-envelope-open-text fa-2x text-info"></i>
-                </div>
-                <h2 class="text-white fw-bold">Verify Your Email</h2>
-                <p class="text-secondary mt-3">
-                    We have sent a 6-digit verification code to:<br>
-                    <span class="text-info fw-bold">{{ request.session.temp_email }}</span>
-                </p>
+<div class="auth-shell">
+    <div class="auth-card mx-auto">
+        <div class="auth-header">
+            <div class="auth-icon">
+                <i class="fas fa-envelope-open-text fa-2x text-info"></i>
+            </div>
+            <h2 class="auth-title">Verify Your Email</h2>
+            <p class="auth-subtitle">
+                We have sent a 6-digit verification code to:<br>
+                <span>{{ request.session.temp_email }}</span>
+            </p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="form-label auth-label small d-block text-center mb-3">ENTER SECURITY CODE</label>
+                <input type="text" name="otp" class="form-control form-control-lg otp-input-glow"
+                       placeholder="· · · · · ·" maxlength="6" required autofocus autocomplete="off" inputmode="numeric">
             </div>
 
-            <form method="POST">
-                {% csrf_token %}
-                <div class="mb-5">
-                    <label class="form-label text-secondary small d-block text-center mb-3">ENTER SECURITY CODE</label>
-                    <input type="text" name="otp" class="form-control form-control-lg text-center otp-input-glow" 
-                           placeholder="· · · · · ·" maxlength="6" required autofocus autocomplete="off">
-                </div>
+            <button type="submit" class="btn btn-accent auth-submit">VERIFY AND ACTIVATE</button>
+        </form>
 
-                <button type="submit" class="btn-accent w-100 py-3 fw-bold glow-button">VERIFY AND ACTIVATE</button>
-            </form>
-
-            <div class="text-center mt-5 pt-3 border-top border-dark">
-                <p class="text-secondary small mb-1">Didn't receive the email?</p>
-                <div id="resend-timer" class="text-info">
-                    You can request a new code in <span id="seconds" class="fw-bold">60</span>s
-                </div>
-                <a href="#" id="resend-btn" class="btn btn-link text-info d-none p-0 fw-bold" style="text-decoration: none;">Resend OTP Now</a>
+        <div class="auth-meta">
+            <p class="small mb-1">Didn't receive the email?</p>
+            <div id="resend-timer" class="text-info">
+                You can request a new code in <span id="seconds" class="fw-bold">60</span>s
             </div>
+            <a href="#" id="resend-btn" class="btn btn-link text-info d-none p-0 fw-bold" style="text-decoration: none;">Resend OTP Now</a>
         </div>
     </div>
 </div>
-
-<style>
-    /* Fixed: Added min-width and better padding to solve the compressed look */
-    .auth-card {
-        background: #1e1e1e;
-        border-radius: 24px;
-        border-top: 6px solid #0dcaf0 !important;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        min-width: 380px; 
-    }
-    .icon-circle {
-        background: rgba(13, 202, 240, 0.1);
-        width: 70px; height: 70px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto;
-    }
-    .otp-input-glow {
-        background: #141414 !important;
-        border: 2px solid #333 !important;
-        color: #0dcaf0 !important;
-        letter-spacing: 15px;
-        font-size: 2.2rem !important;
-        font-weight: 800;
-        padding: 15px 0 !important;
-    }
-    .otp-input-glow:focus {
-        border-color: #0dcaf0 !important;
-        box-shadow: 0 0 25px rgba(13, 202, 240, 0.4) !important;
-    }
-    .btn-accent {
-        background-color: #0dcaf0;
-        color: #000;
-        border: none;
-        border-radius: 12px;
-        font-size: 1.1rem;
-        transition: 0.3s;
-    }
-    .glow-button:hover {
-        box-shadow: 0 0 30px rgba(13, 202, 240, 0.6);
-        transform: translateY(-3px);
-    }
-</style>
 
 <script>
     let timeLeft = 60;
