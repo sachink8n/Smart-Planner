@@ -2,14 +2,16 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from unittest.mock import patch
 
-from .models import OTPVerification
+from .models import OTPVerification, StudyPlan
 
 
 @override_settings(
 	EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
 	DEFAULT_FROM_EMAIL='noreply@example.com',
 )
+@patch.dict('os.environ', {'BREVO_API_KEY': ''}, clear=False)
 class SignupFlowTests(TestCase):
 	def test_signup_creates_inactive_user_and_redirects_to_verify(self):
 		response = self.client.post(
@@ -79,3 +81,31 @@ class SignupFlowTests(TestCase):
 		user.refresh_from_db()
 		self.assertTrue(user.is_active)
 		self.assertFalse(OTPVerification.objects.filter(user=user).exists())
+
+
+class StudyPlanViewTests(TestCase):
+	def test_view_study_plan_renders_when_day_title_has_slash(self):
+		user = User.objects.create_user(
+			username='planneruser',
+			email='planner@example.com',
+			password='Password@123',
+		)
+		self.client.login(username='planneruser', password='Password@123')
+
+		plan = StudyPlan.objects.create(
+			user=user,
+			subject='Java',
+			goal='Master exceptions',
+			duration_days=3,
+			generated_plan=(
+				"## Day 1: Basics\n"
+				"- Variables\n\n"
+				"## Day 3: Java Exception Handling and Input/Output\n"
+				"- Practice try/catch\n"
+			),
+		)
+
+		response = self.client.get(reverse('view_study_plan', args=[plan.id]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, '/add-day/Day%203/')

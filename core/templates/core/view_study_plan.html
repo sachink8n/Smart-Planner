@@ -22,10 +22,10 @@
             {% endfor %}
         {% endif %}
 
-        {% for day_title, tasks in plan_structure %}
+        {% for day_key, day_title, tasks in plan_structure %}
             <div class="form-card mb-4">
                 <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-end gap-2">
-    <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_title %}" class="d-flex flex-column flex-sm-row gap-2 w-100">
+    <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_key %}" class="d-flex flex-column flex-sm-row gap-2 w-100">
          {% csrf_token %}
          
          <input type="date" name="manual_scheduled_date" class="form-control form-control-sm form-control-dark" style="min-width: 150px;" required>
