@@ -3,7 +3,13 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-9 col-lg-7">
-        <h1 class="main-title text-center mb-4">My Profile</h1>
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <a href="{% url 'personal_dashboard' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.06);color:#ccc;border:1px solid rgba(255,255,255,0.12);border-radius:20px;font-size:0.85rem;">
+                <i class="fas fa-arrow-left me-1"></i> Dashboard
+            </a>
+            <h1 class="main-title mb-0 flex-grow-1 text-center">My Profile</h1>
+            <div style="width: 100px;"></div>
+        </div>
 
         <div class="form-card text-center mb-4">
             <h2 class="mb-3">{{ user.username }}</h2>
@@ -50,9 +56,7 @@
             {% endif %}
         </div>
 
-         <div class="text-center mt-4">
-            <a href="{% url 'personal_dashboard' %}" class="btn btn-outline-secondary">← Back to Dashboard</a>
-        </div>
+
     </div>
 </div>
 

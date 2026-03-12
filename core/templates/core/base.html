@@ -574,6 +574,10 @@
                     <p class="text-secondary small mb-3">Welcome, {{ user.username }}</p>
 
                     <div class="list-group list-group-flush">
+                        <a href="{% url 'personal_dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
                         <a href="{% url 'profile' %}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <i class="fas fa-user-circle"></i>
                             <span>Profile</span>
@@ -588,7 +592,7 @@
                         </a>
                         <a href="{% url 'kanban_board' %}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <i class="fas fa-columns"></i>
-                            <span>Kanban Board</span>
+                            <span>Workflow Board</span>
                         </a>
                         <a href="{% url 'task_history' %}" class="list-group-item list-group-item-action d-flex align-items-center">
                             <i class="fas fa-history"></i>

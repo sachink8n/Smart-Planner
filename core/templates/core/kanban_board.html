@@ -1,83 +1,109 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="container-fluid px-0">
-    <h1 class="main-title text-center mb-4">Kanban Board</h1>
+<div class="container-fluid px-2 px-md-0">
+
+    <!-- Header Row -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <a href="{% url 'personal_dashboard' %}" class="btn btn-sm btn-back">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+        <h1 class="main-title mb-0 flex-grow-1 text-center">Workflow Board</h1>
+        <div style="width: 110px;"></div><!-- spacer to center title -->
+    </div>
 
     {% if messages %}
         {% for message in messages %}
-            <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %}">
+            <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %} mb-3">
                 {{ message }}
             </div>
         {% endfor %}
     {% endif %}
 
     <div class="row g-3">
-        <div class="col-12 col-lg-4">
-            <div class="form-card h-100">
-                <h4 class="mb-3 text-info">To Do</h4>
+        <!-- TO DO -->
+        <div class="col-12 col-md-4">
+            <div class="workflow-col h-100">
+                <div class="workflow-col-header text-info">
+                    <i class="fas fa-inbox me-2"></i>To Do
+                    <span class="badge ms-2" style="background:rgba(13,202,240,0.15);color:#0dcaf0;">{{ todo_tasks|length }}</span>
+                </div>
                 {% for task in todo_tasks %}
                     <div class="kanban-card mb-3">
-                        <h6 class="mb-2">{{ task.title }}</h6>
-                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <h6 class="mb-1 text-white">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">
+                            <i class="fas fa-flag me-1"></i>{{ task.get_priority_display }}
+                        </div>
                         <form method="post" action="{% url 'update_task_status' task.id %}">
                             {% csrf_token %}
-                            <select name="status" class="form-select form-select-sm mb-2">
+                            <select name="status" class="form-select form-select-sm mb-2 kanban-select">
                                 <option value="INBOX" selected>To Do</option>
                                 <option value="ACTIVE">In Progress</option>
                                 <option value="COMPLETED">Done</option>
                             </select>
-                            <button type="submit" class="btn btn-sm btn-outline-info w-100">Update</button>
+                            <button type="submit" class="btn btn-sm btn-outline-info w-100">Move</button>
                         </form>
                     </div>
                 {% empty %}
-                    <p class="text-secondary">No tasks in To Do.</p>
+                    <p class="text-secondary small fst-italic">No tasks here.</p>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="col-12 col-lg-4">
-            <div class="form-card h-100">
-                <h4 class="mb-3 text-warning">In Progress</h4>
+        <!-- IN PROGRESS -->
+        <div class="col-12 col-md-4">
+            <div class="workflow-col h-100">
+                <div class="workflow-col-header text-warning">
+                    <i class="fas fa-bolt me-2"></i>In Progress
+                    <span class="badge ms-2" style="background:rgba(255,193,7,0.15);color:#ffc107;">{{ progress_tasks|length }}</span>
+                </div>
                 {% for task in progress_tasks %}
                     <div class="kanban-card mb-3">
-                        <h6 class="mb-2">{{ task.title }}</h6>
-                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <h6 class="mb-1 text-white">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">
+                            <i class="fas fa-flag me-1"></i>{{ task.get_priority_display }}
+                        </div>
                         <form method="post" action="{% url 'update_task_status' task.id %}">
                             {% csrf_token %}
-                            <select name="status" class="form-select form-select-sm mb-2">
+                            <select name="status" class="form-select form-select-sm mb-2 kanban-select">
                                 <option value="INBOX">To Do</option>
                                 <option value="ACTIVE" selected>In Progress</option>
                                 <option value="COMPLETED">Done</option>
                             </select>
-                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Update</button>
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Move</button>
                         </form>
                     </div>
                 {% empty %}
-                    <p class="text-secondary">No tasks in progress.</p>
+                    <p class="text-secondary small fst-italic">No tasks here.</p>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="col-12 col-lg-4">
-            <div class="form-card h-100">
-                <h4 class="mb-3 text-success">Done</h4>
+        <!-- DONE -->
+        <div class="col-12 col-md-4">
+            <div class="workflow-col h-100">
+                <div class="workflow-col-header text-success">
+                    <i class="fas fa-check-circle me-2"></i>Done
+                    <span class="badge ms-2" style="background:rgba(25,135,84,0.15);color:#198754;">{{ done_tasks|length }}</span>
+                </div>
                 {% for task in done_tasks %}
                     <div class="kanban-card mb-3">
-                        <h6 class="mb-2">{{ task.title }}</h6>
-                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <h6 class="mb-1 text-white">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">
+                            <i class="fas fa-flag me-1"></i>{{ task.get_priority_display }}
+                        </div>
                         <form method="post" action="{% url 'update_task_status' task.id %}">
                             {% csrf_token %}
-                            <select name="status" class="form-select form-select-sm mb-2">
+                            <select name="status" class="form-select form-select-sm mb-2 kanban-select">
                                 <option value="INBOX">To Do</option>
                                 <option value="ACTIVE">In Progress</option>
                                 <option value="COMPLETED" selected>Done</option>
                             </select>
-                            <button type="submit" class="btn btn-sm btn-outline-success w-100">Update</button>
+                            <button type="submit" class="btn btn-sm btn-outline-success w-100">Move</button>
                         </form>
                     </div>
                 {% empty %}
-                    <p class="text-secondary">No completed tasks.</p>
+                    <p class="text-secondary small fst-italic">No tasks here.</p>
                 {% endfor %}
             </div>
         </div>
@@ -85,11 +111,52 @@
 </div>
 
 <style>
+.workflow-col {
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 1.1rem;
+    min-height: 200px;
+}
+.workflow-col-header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    align-items: center;
+}
 .kanban-card {
-    background: var(--card-darker);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #242424;
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 12px;
     padding: 0.85rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kanban-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+.kanban-select {
+    background-color: #1a1a1a !important;
+    color: #ccc !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+}
+.btn-back {
+    background: rgba(255,255,255,0.06);
+    color: #ccc;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.btn-back:hover {
+    background: rgba(255,255,255,0.12);
+    color: white;
 }
 </style>
 {% endblock %}

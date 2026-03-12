@@ -43,27 +43,27 @@
                     <form method="POST" action="{% url 'createtodo_ai' %}">
                         {% csrf_token %}
                         <div class="row g-2">
-                            <div class="col-12 col-md-8">
+                            <div class="col-12">
                                 <div class="input-group">
                                     <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-terminal small"></i></span>
                                     <input type="text" class="form-control form-control-dark border-0" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." style="background: #141414 !important; color: white !important;" required>
                                 </div>
                             </div>
-                            <div class="col-6 col-md-2">
+                            <div class="col-5 col-sm-4">
                                 <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
                                     <option value="1">Low</option>
                                     <option value="2" selected>Medium</option>
                                     <option value="3">High</option>
                                 </select>
                             </div>
-                            <div class="col-6 col-md-2">
+                            <div class="col-7 col-sm-4">
                                 <select name="recurring_type" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
                                     <option value="">No Repeat</option>
                                     <option value="DAILY">Daily</option>
                                     <option value="WEEKLY">Weekly</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-12 col-lg-2">
+                            <div class="col-12 col-sm-4">
                                 <button type="submit" class="btn btn-accent w-100 fw-bold" style="border-radius: 10px; min-height: 43px;">Magic Add</button>
                             </div>
                         </div>
@@ -76,29 +76,31 @@
                     <h6 class="text-secondary small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-plus-circle me-2"></i>MANUAL TASK</h6>
                     <form method="POST" action="{% url 'add_task_manual' %}">
                         {% csrf_token %}
-                        <div class="row g-3">
-                            <div class="col-md-8">
+                        <div class="row g-2">
+                            <div class="col-12">
                                 <div class="input-group">
                                     <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-pen-nib small"></i></span>
                                     <input type="text" class="form-control form-control-dark border-0" name="title" placeholder="Enter task name..." style="background: #141414 !important; color: white !important;" required>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-6">
                                 <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
                                     <option value="1">Low Priority</option>
                                     <option value="2" selected>Medium Priority</option>
                                     <option value="3">High Priority</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-6">
                                 <select name="recurring_type" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
                                     <option value="">No Repeat</option>
                                     <option value="DAILY">Repeat Daily</option>
                                     <option value="WEEKLY">Repeat Weekly</option>
                                 </select>
                             </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-outline-secondary w-100 fw-bold py-2" style="border-radius: 10px;">Add Manually</button>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-outline-secondary w-100 mt-3 fw-bold py-2" style="border-radius: 10px;">Add Manually</button>
                     </form>
                 </div>
             </div>
