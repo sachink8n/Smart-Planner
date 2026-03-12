@@ -410,6 +410,29 @@
             color: var(--accent-hover);
             text-decoration: underline;
         }
+        .auth-card .alert {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .auth-card .input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .password-toggle {
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            color: var(--text-secondary) !important;
+            background: var(--card-darker) !important;
+            min-width: 48px;
+        }
+        .password-toggle:hover,
+        .password-toggle:focus {
+            color: var(--accent-color) !important;
+            border-color: rgba(0, 188, 212, 0.45) !important;
+            box-shadow: none !important;
+            background: var(--card-darker) !important;
+        }
         .otp-input-glow {
             min-height: 74px;
             border-radius: 16px;

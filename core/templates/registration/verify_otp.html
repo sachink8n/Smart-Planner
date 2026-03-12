@@ -2,6 +2,14 @@
 {% block content %}
 <div class="auth-shell">
     <div class="auth-card mx-auto">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %} py-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <div class="auth-header">
             <div class="auth-icon">
                 <i class="fas fa-envelope-open-text fa-2x text-info"></i>
@@ -29,7 +37,10 @@
             <div id="resend-timer" class="text-info">
                 You can request a new code in <span id="seconds" class="fw-bold">60</span>s
             </div>
-            <a href="#" id="resend-btn" class="btn btn-link text-info d-none p-0 fw-bold" style="text-decoration: none;">Resend OTP Now</a>
+            <form method="POST" action="{% url 'resend_otp' %}" class="mt-1">
+                {% csrf_token %}
+                <button type="submit" id="resend-btn" class="btn btn-link text-info d-none p-0 fw-bold" style="text-decoration: none;">Resend OTP Now</button>
+            </form>
         </div>
     </div>
 </div>

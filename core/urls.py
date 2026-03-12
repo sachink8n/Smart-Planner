@@ -52,6 +52,9 @@ urlpatterns = [
 
     path('signup/', views.signup_view, name='signup'),
     path('verify-otp/', views.verify_otp_view, name='verify_otp'),
+    path('resend-otp/', views.resend_otp_view, name='resend_otp'),
+    path('forgot-password/', views.forgot_password_request_view, name='forgot_password'),
+    path('forgot-password/verify/', views.forgot_password_verify_view, name='forgot_password_verify'),
 
     path('assign-task/', views.assign_task_to_member_view, name='assign_task_to_member'),
     path('schedule-task/<int:task_id>/', views.schedule_assigned_task_view, name='schedule_assigned_task'),

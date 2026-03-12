@@ -2,6 +2,14 @@
 {% block content %}
 <div class="auth-shell">
     <div class="auth-card auth-card-compact mx-auto">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %} py-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <div class="auth-header">
             <h2 class="auth-title">Create Account</h2>
         </div>
@@ -18,10 +26,19 @@
             </div>
             <div class="mb-4">
                 <label for="id_password" class="form-label auth-label">Password</label>
-                <input type="password" name="password" id="id_password" class="form-control-dark form-control" placeholder="Create a password" required>
+                <div class="input-group">
+                    <input type="password" name="password" id="id_password" class="form-control-dark form-control" placeholder="Create a password" required>
+                    <button class="btn btn-outline-secondary password-toggle" type="button" data-target="id_password" aria-label="Show password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn btn-accent auth-submit">Send OTP</button>
         </form>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'forgot_password' %}" class="auth-link small">Forgot Password?</a>
+        </div>
 
         <div class="text-center mt-4 pt-1">
             <p class="mb-0" style="color: #bfbfbf; font-size: 0.95rem;">
@@ -31,4 +48,19 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.password-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.getElementById(btn.dataset.target);
+            const icon = btn.querySelector('i');
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.classList.toggle('fa-eye', !isPassword);
+            icon.classList.toggle('fa-eye-slash', isPassword);
+        });
+    });
+});
+</script>
 {% endblock %}

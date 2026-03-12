@@ -820,6 +820,42 @@ def _is_local_request(request):
     return host in {'127.0.0.1', 'localhost'}
 
 
+def _is_strong_password(password):
+    return (
+        len(password) >= 8
+        and re.search(r'[A-Z]', password)
+        and re.search(r'[a-z]', password)
+        and re.search(r'[0-9]', password)
+        and re.search(r'[@$!%*?&]', password)
+    )
+
+
+def _save_or_refresh_otp(user, otp_code):
+    otp_obj, _ = OTPVerification.objects.get_or_create(user=user)
+    otp_obj.otp = otp_code
+    otp_obj.created_at = timezone.now()
+    otp_obj.save(update_fields=['otp', 'created_at'])
+
+
+def _send_otp_email(user, otp_code, purpose='verify'):
+    if purpose == 'reset':
+        subject = "Smart Planner Password Reset OTP"
+        message = (
+            f"Hello {user.username},\n\n"
+            f"Your password reset code is: {otp_code}\n"
+            "This code is valid for 5 minutes."
+        )
+    else:
+        subject = "Verify your Smart Planner Account"
+        message = (
+            f"Hello {user.username},\n\n"
+            f"Your Smart Planner verification code is: {otp_code}\n"
+            "This code is valid for 5 minutes."
+        )
+
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+
+
 def _get_pending_signup_user(username, email):
     username_match = User.objects.filter(username__iexact=username).first()
     email_match = User.objects.filter(email__iexact=email).first()
@@ -856,9 +892,7 @@ def signup_view(request):
             messages.error(request, conflict_message)
             return redirect('signup')
 
-        if len(password) < 8 or not re.search(r'[A-Z]', password) or \
-           not re.search(r'[a-z]', password) or not re.search(r'[0-9]', password) or \
-           not re.search(r'[@$!%*?&]', password):
+        if not _is_strong_password(password):
             messages.error(request, "Password must be 8+ chars with Upper, Lower, Number, and Special char.")
             return redirect('signup')
 
@@ -873,19 +907,9 @@ def signup_view(request):
                 user.set_password(password)
                 user.save()
 
-                otp_obj, _ = OTPVerification.objects.get_or_create(user=user)
-                otp_obj.otp = otp_code
-                otp_obj.created_at = timezone.now()
-                otp_obj.save(update_fields=['otp', 'created_at'])
+                _save_or_refresh_otp(user, otp_code)
 
-            subject = "Verify your Smart Planner Account"
-            message = (
-                f"Hello {username},\n\n"
-                f"Your Smart Planner verification code is: {otp_code}\n"
-                "This code is valid for 5 minutes."
-            )
-
-            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+            _send_otp_email(user, otp_code, purpose='verify')
 
             request.session['verify_user_id'] = user.id
             request.session['temp_email'] = email
@@ -903,6 +927,43 @@ def signup_view(request):
             return redirect('signup')
 
     return render(request, 'registration/signup.html')
+
+
+def resend_otp_view(request):
+    if request.method != 'POST':
+        return redirect('signup')
+
+    verify_user_id = request.session.get('verify_user_id')
+    reset_user_id = request.session.get('reset_user_id')
+
+    user = None
+    purpose = 'verify'
+    if verify_user_id:
+        user = User.objects.filter(id=verify_user_id, is_active=False).first()
+        purpose = 'verify'
+    elif reset_user_id:
+        user = User.objects.filter(id=reset_user_id, is_active=True).first()
+        purpose = 'reset'
+
+    if not user:
+        messages.error(request, "Session expired. Please try again.")
+        return redirect('signup')
+
+    otp_code = str(random.randint(100000, 999999))
+    _save_or_refresh_otp(user, otp_code)
+
+    try:
+        _send_otp_email(user, otp_code, purpose=purpose)
+        messages.success(request, "New OTP sent successfully.")
+    except Exception as e:
+        if _is_local_request(request):
+            messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
+        else:
+            messages.error(request, f"Failed to send OTP: {e}")
+
+    if purpose == 'reset':
+        return redirect('forgot_password_verify')
+    return redirect('verify_otp')
 
 
 def verify_otp_view(request):
@@ -945,6 +1006,90 @@ def verify_otp_view(request):
         return redirect('login')
 
     return render(request, 'registration/verify_otp.html')
+
+
+def forgot_password_request_view(request):
+    if request.method == 'POST':
+        identifier = request.POST.get('identifier', '').strip()
+        user = User.objects.filter(
+            Q(username__iexact=identifier) | Q(email__iexact=identifier),
+            is_active=True,
+        ).first()
+
+        if not user:
+            messages.error(request, "No active account found with this username/email.")
+            return redirect('forgot_password')
+
+        otp_code = str(random.randint(100000, 999999))
+        _save_or_refresh_otp(user, otp_code)
+
+        request.session['reset_user_id'] = user.id
+        request.session['temp_email'] = user.email
+
+        try:
+            _send_otp_email(user, otp_code, purpose='reset')
+            messages.success(request, "Password reset OTP sent to your email.")
+            return redirect('forgot_password_verify')
+        except Exception as e:
+            if _is_local_request(request):
+                messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
+                return redirect('forgot_password_verify')
+            messages.error(request, f"Could not send OTP: {e}")
+            return redirect('forgot_password')
+
+    return render(request, 'registration/forgot_password.html')
+
+
+def forgot_password_verify_view(request):
+    reset_user_id = request.session.get('reset_user_id')
+    if not reset_user_id:
+        messages.error(request, "Please request password reset first.")
+        return redirect('forgot_password')
+
+    user = User.objects.filter(id=reset_user_id, is_active=True).first()
+    if not user:
+        request.session.pop('reset_user_id', None)
+        request.session.pop('temp_email', None)
+        messages.error(request, "Reset session expired. Please try again.")
+        return redirect('forgot_password')
+
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        otp_obj = OTPVerification.objects.filter(user=user).first()
+        if not otp_obj:
+            messages.error(request, "Verification code not found. Please request again.")
+            return redirect('forgot_password')
+
+        if not otp_obj.is_valid():
+            otp_obj.delete()
+            messages.error(request, "OTP expired. Please request a new reset code.")
+            return redirect('forgot_password')
+
+        if otp_obj.otp != entered_otp:
+            messages.error(request, "Invalid OTP.")
+            return redirect('forgot_password_verify')
+
+        if password != confirm_password:
+            messages.error(request, "Password and confirm password do not match.")
+            return redirect('forgot_password_verify')
+
+        if not _is_strong_password(password):
+            messages.error(request, "Password must be 8+ chars with Upper, Lower, Number, and Special char.")
+            return redirect('forgot_password_verify')
+
+        user.set_password(password)
+        user.save(update_fields=['password'])
+        otp_obj.delete()
+
+        request.session.pop('reset_user_id', None)
+        request.session.pop('temp_email', None)
+        messages.success(request, "Password reset successful. Please login.")
+        return redirect('login')
+
+    return render(request, 'registration/forgot_password_verify.html')
 
 @login_required
 def assign_task_to_member_view(request):
