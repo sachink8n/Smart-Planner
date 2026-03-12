@@ -1,3 +1,9 @@
+import logging
+import os
+import random
+import re
+
+import markdown as md
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta, date
@@ -12,11 +18,8 @@ from django.db.models import Q
 from django.db.models import Count
 from django.db.models.functions import ExtractHour
 from .models import Team, Todo
-import re
-import markdown as md
 from django.core.mail import send_mail
 from django.conf import settings
-import random
 from .models import OTPVerification
 from django.contrib import messages
 from better_profanity import profanity
@@ -28,6 +31,9 @@ from .ai_service import (
     get_task_difficulty_with_ai, 
     get_time_estimate_with_ai
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def parse_plan_days(plan_text):
@@ -1064,22 +1070,60 @@ def _save_or_refresh_otp(user, otp_code):
 
 
 def _send_otp_email(user, otp_code, purpose='verify'):
+    """
+    Send OTP via Brevo transactional email HTTP API (avoids SMTP port blocks on Render).
+    Falls back to Django send_mail only if BREVO_API_KEY is not set.
+    """
+    import httpx
+
+    api_key = os.environ.get("BREVO_API_KEY", "")
+    from_email = settings.DEFAULT_FROM_EMAIL
+    from_name = "Smart Planner"
+
+    if not from_email:
+        raise ValueError("DEFAULT_FROM_EMAIL is not configured.")
+
     if purpose == 'reset':
         subject = "Smart Planner Password Reset OTP"
-        message = (
+        text_content = (
             f"Hello {user.username},\n\n"
             f"Your password reset code is: {otp_code}\n"
             "This code is valid for 5 minutes."
         )
     else:
         subject = "Verify your Smart Planner Account"
-        message = (
+        text_content = (
             f"Hello {user.username},\n\n"
             f"Your Smart Planner verification code is: {otp_code}\n"
             "This code is valid for 5 minutes."
         )
 
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+    if api_key:
+        # Use Brevo REST API (works on all hosting including Render free tier)
+        payload = {
+            "sender": {"name": from_name, "email": from_email},
+            "to": [{"email": user.email}],
+            "subject": subject,
+            "textContent": text_content,
+        }
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "api-key": api_key,
+        }
+        resp = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
+        if resp.status_code not in (200, 201):
+            raise RuntimeError(f"Brevo API error {resp.status_code}: {resp.text}")
+    else:
+        # Fallback: Django SMTP backend (may be blocked on some hosts)
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+            raise ValueError("Neither BREVO_API_KEY nor SMTP credentials are configured.")
+        send_mail(subject, text_content, from_email, [user.email])
 
 
 def _get_pending_signup_user(username, email):
@@ -1124,6 +1168,7 @@ def signup_view(request):
 
         otp_code = str(random.randint(100000, 999999))
 
+        user = pending_user
         try:
             with transaction.atomic():
                 user = pending_user or User(username=username, email=email, is_active=False)
@@ -1143,13 +1188,15 @@ def signup_view(request):
             return redirect('verify_otp')
 
         except Exception as e:
-            request.session['verify_user_id'] = user.id
-            request.session['temp_email'] = email
+            logger.exception("Signup OTP email failed for email=%s username=%s", email, username)
+            if user and user.id:
+                request.session['verify_user_id'] = user.id
+                request.session['temp_email'] = email
             if _is_local_request(request):
                 messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
                 return redirect('verify_otp')
 
-            messages.error(request, f"Mail delivery failed: {e}")
+            messages.error(request, "Unable to send verification OTP right now. Please try again in a moment.")
             return redirect('signup')
 
     return render(request, 'registration/signup.html')
@@ -1182,6 +1229,7 @@ def resend_otp_view(request):
         _send_otp_email(user, otp_code, purpose=purpose)
         messages.success(request, "New OTP sent successfully.")
     except Exception as e:
+        logger.exception("Resend OTP email failed for user_id=%s purpose=%s", user.id, purpose)
         if _is_local_request(request):
             messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
         else:
@@ -1257,6 +1305,7 @@ def forgot_password_request_view(request):
             messages.success(request, "Password reset OTP sent to your email.")
             return redirect('forgot_password_verify')
         except Exception as e:
+            logger.exception("Password reset OTP email failed for user_id=%s", user.id)
             if _is_local_request(request):
                 messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
                 return redirect('forgot_password_verify')
