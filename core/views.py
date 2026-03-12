@@ -357,6 +357,11 @@ def createtodo_ai(request):
         if priority_val not in [1, 2, 3]:
             priority_val = 2
 
+        recurring_type = request.POST.get('recurring_type', '')
+        if recurring_type not in ['DAILY', 'WEEKLY']:
+            recurring_type = ''
+        is_recurring = recurring_type in ['DAILY', 'WEEKLY']
+
         if user_sentence:
             if _contains_blocked_ai_content(user_sentence):
                 messages.error(request, "This task topic is not allowed. Please enter a safe productivity task.")
@@ -377,7 +382,9 @@ def createtodo_ai(request):
                 status='INBOX',
                 priority=priority_val,
                 team=None,
-                memo='' 
+                memo='',
+                is_recurring=is_recurring,
+                recurring_type=recurring_type,
             )
             messages.success(request, f"AI Task '{new_task.title}' added to your inbox!")
             
@@ -403,6 +410,10 @@ def add_task_manual(request):
         
         # --- NAYI DATE VALUE LO ---
         scheduled_date = request.POST.get('scheduled_date')
+        recurring_type = request.POST.get('recurring_type', '')
+        if recurring_type not in ['DAILY', 'WEEKLY']:
+            recurring_type = ''
+        is_recurring = recurring_type in ['DAILY', 'WEEKLY']
         
         # Agar user date nahi dalta (waise humne required kiya hai), 
         # toh default aaj ki date rakho
@@ -415,7 +426,9 @@ def add_task_manual(request):
                 title=title, 
                 status='INBOX', 
                 priority=priority_val,
-                scheduled_date=scheduled_date # Database mein save karo
+                scheduled_date=scheduled_date, # Database mein save karo
+                is_recurring=is_recurring,
+                recurring_type=recurring_type,
             )
             
     return redirect('personal_dashboard')
@@ -441,8 +454,9 @@ def complete_task(request, task_id):
             return redirect('team_dashboard', team_id=task.team.id)
         return redirect('personal_dashboard')
 
+    completion_time = timezone.now()
     task.status = 'COMPLETED'
-    task.datecompleted = timezone.now()
+    task.datecompleted = completion_time
     
     if task.team and not task.assignee:
         task.assignee = request.user
@@ -452,7 +466,27 @@ def complete_task(request, task_id):
     award_xp_and_level_up(request.user, task.difficulty)
     check_and_award_badges(request.user, task)
     
-    messages.success(request, f"Task '{task.title}' completed!")
+    if task.is_recurring and task.recurring_type in ['DAILY', 'WEEKLY']:
+        next_days = 1 if task.recurring_type == 'DAILY' else 7
+        base_date = task.scheduled_date or completion_time.date()
+        task.last_completed = completion_time.date()
+        task.status = 'INBOX'
+        task.datecompleted = None
+        task.scheduled_date = base_date + timedelta(days=next_days)
+        task.timer_start_time = None
+        task.timer_seconds_remaining = None
+        task.save(update_fields=[
+            'last_completed',
+            'status',
+            'datecompleted',
+            'scheduled_date',
+            'timer_start_time',
+            'timer_seconds_remaining',
+            'last_updated',
+        ])
+        messages.success(request, f"Recurring task '{task.title}' reset for next cycle.")
+    else:
+        messages.success(request, f"Task '{task.title}' completed!")
     
    
     request.session['show_mood_prompt'] = True

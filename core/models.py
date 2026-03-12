@@ -64,6 +64,12 @@ class Todo(models.Model):
         (1, 'Low'),
     ]
 
+    RECURRING_CHOICES = [
+        ('', 'Not Recurring'),
+        ('DAILY', 'Repeat Daily'),
+        ('WEEKLY', 'Repeat Weekly'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
     title = models.CharField(max_length=200)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='INBOX')
@@ -94,6 +100,9 @@ class Todo(models.Model):
     sub_tasks = models.TextField(null=True, blank=True)
 
     priority = models.IntegerField(choices=PRIORITY_CHOICES, default=2)
+    is_recurring = models.BooleanField(default=False)
+    recurring_type = models.CharField(max_length=10, choices=RECURRING_CHOICES, blank=True, default='')
+    last_completed = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.title
