@@ -7,17 +7,15 @@
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %}" 
-                    role="alert" 
-                    style="background-color: {% if 'success' in message.tags %}#134a31{% elif 'error' in message.tags or 'danger' in message.tags %}#4a1313{% else %}#4a4a13{% endif %}; 
-                           color: {% if 'success' in message.tags %}#a2e8c2{% elif 'error' in message.tags or 'danger' in message.tags %}#e8a2a2{% else %}#e8e8a2{% endif %}; 
-                           border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">
+                <div class="alert dashboard-alert {% if 'success' in message.tags %}dashboard-alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}dashboard-alert-danger{% else %}dashboard-alert-warning{% endif %}"
+                    role="alert">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
 
         {% if profile %}
+        {% widthratio profile.xp xp_for_next_level 100 as xp_percent %}
         <div class="mb-5">
             <div class="text-center">
                 <span class="badge bg-light text-dark fs-6 p-2 shadow-sm" style="border-radius: 20px;">
@@ -26,8 +24,9 @@
                 </span>
             </div>
             <div class="progress" style="height: 12px; background-color: #1e1e1e; border-radius: 10px; margin-top: 15px; border: 1px solid #2e2e2e;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
-                     style="width: {% if xp_for_next_level > 0 %}{% widthratio profile.xp xp_for_next_level 100 %}{% else %}0{% endif %}%; background-color: var(--accent-color);" 
+                 <div class="progress-bar progress-bar-striped progress-bar-animated dashboard-progress-bar" role="progressbar"
+                     data-progress-width="{{ xp_percent }}"
+                     style="background-color: var(--accent-color);"
                      aria-valuenow="{{ profile.xp }}"></div>
             </div>
             <div class="text-center mt-2">
@@ -39,7 +38,7 @@
         {% if not active_task %}
         <div class="form-card text-center mb-4 p-4 border-0 shadow-lg mood-grid" style="background: linear-gradient(145deg, #1e1e1e, #161616); border-radius: 20px;">
             <h5 class="mb-1 text-white fw-bold"><i class="fas fa-bolt me-2" style="color:var(--accent-color);"></i>How's the energy right now?</h5>
-            <p class="text-secondary small mb-3">Pick your mood best matching task from your queue will auto-activate.</p>
+            <p class="text-secondary small mb-3">Pick your mood. The best matching task from your queue will auto-activate.</p>
             <div class="d-grid gap-2">
                 <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="btn btn-outline-success py-2"><i class="fas fa-bolt me-2"></i> Focused / High Energy</a>
                 <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="btn btn-outline-warning py-2"><i class="fas fa-smile me-2"></i> Feeling Normal</a>
@@ -135,7 +134,7 @@
                     </div>
                 </div>
                 <div class="mt-4 text-center">
-                    <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text" data-seconds="{{ active_timer_seconds|default:0 }}" data-running="{% if active_timer_running %}1{% else %}0{% endif %}">
+                    <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text" data-seconds="{{ active_timer_seconds|default:0 }}" data-running="{% if active_timer_running %}1{% else %}0{% endif %}" data-task-id="{{ active_task.id }}" data-fallback-seconds="{{ active_task.time_estimate_minutes|default:25|add:'0' }}">
                         00:00
                     </div>
                     <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
@@ -244,6 +243,28 @@
 </div>
 
 <style>
+    .dashboard-alert {
+        border-radius: 12px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(255,255,255,0.1);
+        font-weight: 600;
+    }
+
+    .dashboard-alert-success {
+        background-color: #134a31;
+        color: #a2e8c2;
+    }
+
+    .dashboard-alert-danger {
+        background-color: #4a1313;
+        color: #e8a2a2;
+    }
+
+    .dashboard-alert-warning {
+        background-color: #4a4a13;
+        color: #e8e8a2;
+    }
+
     /* TEAL GLOW LOGIC */
     .ai-step-card {
         background: rgba(255, 255, 255, 0.04);
@@ -316,8 +337,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.querySelector('.dashboard-progress-bar');
     const rawDataBox = document.getElementById('raw-ai-data');
     const formattedBox = document.getElementById('formatted-steps');
+
+    if (progressBar) {
+        progressBar.style.width = `${progressBar.dataset.progressWidth || 0}%`;
+    }
 
     if (rawDataBox && formattedBox) {
         let rawText = rawDataBox.innerText.trim();
@@ -393,20 +419,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return cookieValue;
     }
     const csrfToken = getCookie('csrftoken');
+    const timerDisplay = document.getElementById('timer-display');
     const startBtn = document.getElementById('start-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const addTimeBtn = document.getElementById('add-time-btn');
     const editTimeBtn = document.getElementById('edit-time-btn');
     const editMinutesInput = document.getElementById('edit-minutes-input');
-    const timerDisplay = document.getElementById('timer-display');
     let timerInterval;
     let remainingSeconds = 0;
     let isRunning = false;
 
-    {% if active_task %}
-    const activeTaskId = "{{ active_task.id }}";
+    if (timerDisplay) {
+    const activeTaskId = timerDisplay.dataset.taskId || "";
     const initialSeconds = parseInt(timerDisplay.dataset.seconds || "0", 10);
     const initialRunning = timerDisplay.dataset.running === "1";
+    const fallbackSeconds = parseInt(timerDisplay.dataset.fallbackSeconds || "1500", 10) * 60;
 
     function renderTimer() {
         const safeSeconds = Math.max(0, parseInt(remainingSeconds || 0, 10));
@@ -458,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return fetch(url, options).then(r => r.json());
     }
 
-    updateTimerState(initialSeconds || ({{ active_task.time_estimate_minutes|default:25 }} * 60), initialRunning);
+    updateTimerState(initialSeconds || fallbackSeconds, initialRunning);
 
     if (startBtn) {
         startBtn.addEventListener('click', () => {
@@ -514,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTimerState(data.seconds, data.running);
             }
         });
-    {% endif %}
+    }
 });
 </script>
 {% endblock %}
