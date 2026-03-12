@@ -42,10 +42,23 @@
                     <h6 class="text-info small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-wand-magic-sparkles me-2"></i>AI QUICK ADD</h6>
                     <form method="POST" action="{% url 'createtodo_ai' %}">
                         {% csrf_token %}
-                        <div class="input-group">
-                            <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-terminal small"></i></span>
-                            <input type="text" class="form-control form-control-dark border-0" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." style="background: #141414 !important; color: white !important;" required>
-                            <button type="submit" class="btn btn-accent px-4 fw-bold" style="border-radius: 0 10px 10px 0;">Magic Add</button>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-terminal small"></i></span>
+                                    <input type="text" class="form-control form-control-dark border-0" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." style="background: #141414 !important; color: white !important;" required>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                                    <option value="1">Low</option>
+                                    <option value="2" selected>Medium</option>
+                                    <option value="3">High</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <button type="submit" class="btn btn-accent w-100 fw-bold" style="border-radius: 10px; min-height: 43px;">Magic Add</button>
+                            </div>
                         </div>
                     </form>
                 </div>

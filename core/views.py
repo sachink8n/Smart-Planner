@@ -271,6 +271,14 @@ def createtodo_ai(request):
         user = request.user
         
         user_sentence = request.POST.get('magic_input')
+        try:
+            priority_val = int(request.POST.get('priority', 2))
+        except (TypeError, ValueError):
+            priority_val = 2
+
+        if priority_val not in [1, 2, 3]:
+            priority_val = 2
+
         if user_sentence:
             category = get_task_category_with_ai(user_sentence)
             difficulty = get_task_difficulty_with_ai(user_sentence)
@@ -285,7 +293,7 @@ def createtodo_ai(request):
                 time_estimate_minutes=time_estimate, 
                 sub_tasks=sub_tasks_list,
                 status='INBOX',
-                priority=2,
+                priority=priority_val,
                 team=None,
                 memo='' 
             )
