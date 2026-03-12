@@ -33,7 +33,8 @@ DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 USE_LOCAL_SQLITE = os.environ.get("USE_LOCAL_SQLITE", "false").lower() == "true"
 
-ALLOWED_HOSTS = ['*']
+SITE_URL = os.environ.get("SITE_URL")
+ALLOWED_HOSTS = ["SITE_URL"]
 
 
 # Application definition
