@@ -1,31 +1,28 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-9 col-lg-7">
-        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-            <a href="{% url 'personal_dashboard' %}" class="btn btn-sm" style="background:rgba(255,255,255,0.06);color:#ccc;border:1px solid rgba(255,255,255,0.12);border-radius:20px;font-size:0.85rem;">
-                <i class="fas fa-arrow-left me-1"></i> Dashboard
-            </a>
-            <h1 class="main-title mb-0 flex-grow-1 text-center">My Profile</h1>
-            <div style="width: 100px;"></div>
+<div class="page-shell page-shell-narrow px-0">
+        <div class="page-header justify-content-center justify-content-md-between">
+            <a href="{% url 'personal_dashboard' %}" class="subtle-back-link order-2 order-md-1"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            <h1 class="main-title page-header-title order-1 order-md-2 w-100 justify-content-center"><span>My Profile</span></h1>
+            <div class="d-none d-md-block order-3" style="width:120px;"></div>
         </div>
 
-        <div class="form-card text-center mb-4">
+        <div class="form-card text-center mb-4 rounded-4">
             <h2 class="mb-3">{{ user.username }}</h2>
             <span class="badge bg-light text-dark fs-5 p-2 shadow-sm">
                 <i class="fas fa-rocket" style="color: #ff6f61;"></i> 
                 Level {{ profile.level }}: {{ profile.get_title }}
             </span>
 
-            <div class="progress mt-3" style="height: 10px; background-color: var(--bg-dark);">
+            <div class="progress mt-3" style="height: 10px; background-color: var(--bg-dark); border-radius: 999px; overflow: hidden;">
                 <div class="progress-bar" role="progressbar" style="width: {% widthratio profile.xp xp_for_next_level 100 %}%; background-color: var(--accent-color);" 
                      aria-valuenow="{{ profile.xp }}" aria-valuemin="0" aria-valuemax="{{ xp_for_next_level }}"></div>
             </div>
             <small class="text-secondary">{{ profile.xp }} / {{ xp_for_next_level }} XP to next level</small>
         </div>
 
-        <div class="form-card">
+        <div class="form-card rounded-4">
             <h3 class="mb-3"><i class="fas fa-trophy" style="color: #ffc107;"></i> My Badges</h3>
             <div class="row">
                 {% for badge in all_badges %}
@@ -42,7 +39,7 @@
             </div>
         </div>
 
-        <div class="form-card mt-4">
+        <div class="form-card mt-4 rounded-4">
             <h3 class="mb-3"><i class="fas fa-chart-pie" style="color: var(--accent-color);"></i> Productivity Pattern</h3>
             {% if productivity_total_points > 0 %}
                 <p class="text-secondary mb-3">
@@ -55,9 +52,6 @@
                 <p class="text-secondary mb-0">Complete some tasks first to unlock your productivity chart.</p>
             {% endif %}
         </div>
-
-
-    </div>
 </div>
 
 <style>
@@ -74,8 +68,16 @@
         opacity: 0.3;
     }
     .chart-wrap {
+        width: 100%;
         max-width: 460px;
         margin: 0 auto;
+        position: relative;
+        min-height: 280px;
+    }
+
+    #productivityChart {
+        max-width: 100%;
+        max-height: 320px;
     }
 </style>
 
@@ -105,10 +107,16 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
+                    position: 'top',
                     labels: {
                         color: '#e6e6e6',
+                        boxWidth: window.innerWidth < 768 ? 14 : 28,
+                        font: {
+                            size: window.innerWidth < 768 ? 10 : 12,
+                        },
                     }
                 }
             }

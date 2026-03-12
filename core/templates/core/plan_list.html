@@ -1,24 +1,23 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-9 col-lg-8">
-        
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <h1 class="main-title mb-3 mb-md-0"><i class="fas fa-list-alt"></i> My Plans</h1>
-            
-            <div class="d-flex gap-2">
-                <a href="{% url 'personal_dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-user"></i> My Dashboard
+<div class="page-shell page-shell-narrow px-0">
+
+        <div class="page-header">
+            <h1 class="main-title page-header-title"><i class="fas fa-list-alt"></i><span>My Plans</span></h1>
+
+            <div class="page-actions">
+                <a href="{% url 'personal_dashboard' %}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-user me-2"></i>My Dashboard
                 </a>
-                <a href="{% url 'create_study_plan' %}" class="btn btn-accent">
-                    <i class="fas fa-plus"></i> Create New Plan
+                <a href="{% url 'create_study_plan' %}" class="btn btn-accent w-100">
+                    <i class="fas fa-plus me-2"></i>Create New Plan
                 </a>
             </div>
         </div>
         {% if messages %}
             {% for message in messages %}
-                <div class="alert 
+                <div class="alert rounded-4 px-4 py-3 
                     {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-warning{% endif %}" 
                     role="alert" style="background-color: {% if message.tags == 'success' %}#134a31{% elif message.tags == 'error' %}#4a1313{% else %}#4a4a13{% endif %}; 
                            color: {% if message.tags == 'success' %}#a2e8c2{% elif message.tags == 'error' %}#e8a2a2{% else %}#e8e8a2{% endif %}; 
@@ -29,23 +28,21 @@
             {% endfor %}
         {% endif %}
         
-        <div class="list-group">
+        <div class="d-grid gap-3">
             {% for plan in plans %}
-                <div class="list-group-item d-flex justify-content-between align-items-center" 
-                     style="background-color: var(--card-dark); border-color: var(--border-dark); color: var(--text-primary); margin-bottom: 10px; border-radius: 8px; {% if plan.is_completed %}opacity: 0.6;{% endif %}">
-                    
-                    <a href="{% url 'view_study_plan' plan.id %}" class="text-decoration-none" style="flex-grow: 1; color: inherit; padding: 1.25rem;">
+                <div class="mobile-stack-card {% if plan.is_completed %}opacity-75{% endif %}">
+                    <a href="{% url 'view_study_plan' plan.id %}" class="d-block text-decoration-none" style="color: inherit;">
                         <h5 class="mb-1" style="color: var(--accent-color); {% if plan.is_completed %}text-decoration: line-through;{% endif %}">
                             {{ plan.subject }}
                         </h5>
                         <small class="text-secondary">{{ plan.goal|truncatewords:10 }}</small>
                     </a>
-                    
-                    <div class="d-flex gap-2" style="padding-right: 1.25rem;">
+
+                    <div class="mt-3 d-flex flex-wrap gap-2 justify-content-end">
                         {% if not plan.is_completed %}
                         <form action="{% url 'complete_study_plan' plan.id %}" method="POST" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-success" title="Mark Plan as Complete">
+                            <button type="submit" class="btn btn-sm btn-outline-success px-3" title="Mark Plan as Complete">
                                 <i class="fas fa-check-circle"></i>
                             </button>
                         </form>
@@ -53,30 +50,29 @@
 
                         <form action="{% url 'delete_study_plan' plan.id %}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure? This will delete the plan AND all tasks added from it.');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Plan">
+                            <button type="submit" class="btn btn-sm btn-outline-danger px-3" title="Delete Plan">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </form>
                     </div>
                 </div>
             {% empty %}
-                <div class="form-card text-center">
+                <div class="form-card text-center rounded-4">
                     <p class="text-secondary">You haven't created any plans yet.</p>
                 </div>
             {% endfor %}
         </div>
 
         {% if plans %}
-        <div class="text-center mt-3">
+        <div class="text-center mt-4">
              <form action="{% url 'delete_completed_plans' %}" method="POST" onsubmit="return confirm('Delete all COMPLETED plans?');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <button type="submit" class="btn btn-outline-secondary w-100 w-sm-auto">
                     <i class="fas fa-archive"></i> Clear All Completed Plans
                 </button>
             </form>
         </div>
         {% endif %}
 
-    </div>
 </div>
 {% endblock %}

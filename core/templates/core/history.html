@@ -1,17 +1,16 @@
 {% extends 'core/base.html' %} 
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-9 col-lg-7">
+<div class="page-shell page-shell-narrow px-0">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="main-title mb-0">Completed History</h1>
+        <div class="page-header">
+            <h1 class="main-title page-header-title"><span>Completed History</span></h1>
             
             {% if grouped_tasks %}
-                <form method="POST" action="{% url 'reset_history' %}" onsubmit="return confirm('Are you sure you want to delete your entire task history? This cannot be undone.');">
+                <form method="POST" action="{% url 'reset_history' %}" onsubmit="return confirm('Are you sure you want to delete your entire task history? This cannot be undone.');" class="w-100 w-md-auto">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-action btn-delete">
-                        <i class="fas fa-trash-alt"></i> Clear History
+                    <button type="submit" class="btn btn-action btn-delete w-100">
+                        <i class="fas fa-trash-alt me-2"></i> Clear History
                     </button>
                 </form>
             {% endif %}
@@ -28,13 +27,13 @@
         {% for date, tasks in grouped_tasks.items %}
             <h4 class="mt-5 mb-3" style="color: var(--text-secondary);">{{ date|date:"l, d F Y" }}</h4>
             {% for task in tasks %}
-            <div class="task-card">
-                <div class="task-header">
+            <div class="task-card rounded-4">
+                <div class="task-header flex-column flex-sm-row gap-2">
                     <div>
                         <h5 class="task-title" style="text-decoration: line-through; color: var(--text-secondary);">{{ task.title }}</h5>
                         <span class="badge-category">{{ task.category }}</span>
                     </div>
-                    <span class="task-date">{{ task.datecompleted|date:"h:i A" }}</span>
+                    <span class="task-date ms-0 ms-sm-3">{{ task.datecompleted|date:"h:i A" }}</span>
                 </div>
             </div>
             {% endfor %}
@@ -44,10 +43,9 @@
             </div>
         {% endfor %}
 
-        <div class="mt-5 text-center">
-             <a href="{% url 'personal_dashboard' %}">Back to Main Screen</a>
+           <div class="mt-5 text-center">
+               <a href="{% url 'personal_dashboard' %}" class="subtle-back-link"> <i class="fas fa-arrow-left"></i> Back to Main Screen</a>
         </div>
 
-    </div>
 </div>
 {% endblock %}

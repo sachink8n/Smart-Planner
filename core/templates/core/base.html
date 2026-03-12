@@ -50,6 +50,73 @@
             letter-spacing: -0.02em;
         }
 
+        .page-shell {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .page-shell-narrow {
+            max-width: 860px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin: 0;
+            min-width: 0;
+        }
+
+        .page-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .page-actions > * {
+            min-width: 0;
+        }
+
+        .mobile-stack-card {
+            background-color: var(--card-dark);
+            border: 1px solid var(--border-dark);
+            border-radius: 18px;
+            padding: 1.1rem;
+            box-shadow: 0 16px 34px rgba(0,0,0,0.24);
+        }
+
+        .subtle-back-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            border-radius: 999px;
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: 0.2s ease;
+        }
+
+        .subtle-back-link:hover {
+            color: var(--text-primary);
+            border-color: rgba(255,255,255,0.24);
+            background: rgba(255,255,255,0.08);
+        }
+
         /* --- NAVBAR (FIXED) --- */
         .navbar{
             background-color: transparent !important;
@@ -575,6 +642,22 @@
                 min-height: 50px;
                 font-size: 0.96rem;
             }
+            .page-header {
+                align-items: stretch;
+                margin-bottom: 1.1rem;
+            }
+            .page-header-title {
+                width: 100%;
+                justify-content: flex-start;
+                font-size: 1.1rem;
+            }
+            .page-actions {
+                grid-template-columns: 1fr;
+            }
+            .btn,
+            .subtle-back-link {
+                min-height: 48px;
+            }
             .otp-input-glow {
                 min-height: 64px;
                 letter-spacing: 0.42rem;
@@ -595,6 +678,10 @@
             }
             .form-card, .task-card {
                 padding: 0.9rem;
+            }
+            .mobile-stack-card {
+                padding: 0.95rem;
+                border-radius: 16px;
             }
             #timer-display {
                 font-size: 2.8rem !important;
