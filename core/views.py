@@ -1196,7 +1196,7 @@ def signup_view(request):
                 messages.warning(request, f"Email delivery failed locally. Use this OTP: {otp_code}")
                 return redirect('verify_otp')
 
-            messages.error(request, "Unable to send verification OTP right now. Please try again in a moment.")
+            messages.error(request, f"OTP send failed: {e}")
             return redirect('signup')
 
     return render(request, 'registration/signup.html')
