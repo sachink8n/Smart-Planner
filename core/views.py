@@ -51,6 +51,17 @@ def parse_plan_days(plan_text):
     return days
 
 
+def _get_task_timer_remaining_seconds(task):
+    if task.timer_seconds_remaining is None:
+        return None
+
+    remaining = int(task.timer_seconds_remaining)
+    if task.timer_start_time:
+        elapsed = int((timezone.now() - task.timer_start_time).total_seconds())
+        remaining = max(0, remaining - elapsed)
+    return max(0, remaining)
+
+
 
 
 def award_xp_and_level_up(user, task_difficulty):
@@ -222,15 +233,14 @@ def personal_dashboard_view(request):
     
     # SARE TASKS (Personal + Team + Study Plan)
     # Exclude logic zaroori hai taaki 'assigned_tasks' aur 'active' yahan na dikhein
-    all_my_tasks = Todo.objects.filter(
+    all_my_tasks = Todo.objects.select_related('team', 'assignee', 'study_plan').filter(
         Q(user=user) | Q(assignee=user)
     ).exclude(status='DELETED').distinct().order_by('scheduled_date', 'created')
 
-    print(f"--- SMART PLANNER DEBUG ---")
-    print(f"User: {user.username} | Total Todos in DB: {all_my_tasks.count()}")
-
     active_task = all_my_tasks.filter(status='ACTIVE').first()
     show_mood = True if not active_task else False
+    active_timer_seconds = _get_task_timer_remaining_seconds(active_task) if active_task else None
+    active_timer_running = bool(active_task and active_task.timer_start_time and active_timer_seconds and active_timer_seconds > 0)
     
     # UP NEXT: Inbox waale wo tasks jo upar assigned section mein nahi hain
     pending_tasks = all_my_tasks.filter(status='INBOX').exclude(
@@ -247,6 +257,8 @@ def personal_dashboard_view(request):
         'xp_for_next_level': profile.level * 100,
         'show_mood': show_mood,
         'show_add_forms': True,
+        'active_timer_seconds': active_timer_seconds,
+        'active_timer_running': active_timer_running,
     }
     return render(request, 'core/main.html', context)
 
@@ -406,10 +418,16 @@ def snooze_task(request, task_id):
 def start_task_timer(request, task_id):
     if request.method == 'POST':
         task = get_object_or_404(Task, id=task_id, user=request.user)
+
+        remaining = _get_task_timer_remaining_seconds(task)
+        if remaining is None or remaining <= 0:
+            base_minutes = task.time_estimate_minutes or 25
+            remaining = max(60, int(base_minutes) * 60)
+
+        task.timer_seconds_remaining = remaining
         task.timer_start_time = timezone.now()
-        task.timer_seconds_remaining = task.time_estimate_minutes * 60
         task.save()
-        return JsonResponse({'status': 'ok', 'seconds': task.timer_seconds_remaining})
+        return JsonResponse({'status': 'ok', 'seconds': remaining, 'running': True})
     return JsonResponse({'status': 'error'}, status=400)
 
 
@@ -417,11 +435,62 @@ def start_task_timer(request, task_id):
 def add_time_to_timer(request, task_id):
     if request.method == 'POST':
         task = get_object_or_404(Task, id=task_id, user=request.user)
-        if task.timer_seconds_remaining is not None:
-            task.timer_seconds_remaining += 5 * 60 
+        remaining = _get_task_timer_remaining_seconds(task)
+        if remaining is not None:
+            task.timer_seconds_remaining = remaining + (5 * 60)
+            if task.timer_start_time:
+                task.timer_start_time = timezone.now()
             task.save()
-            return JsonResponse({'status': 'ok', 'seconds': task.timer_seconds_remaining})
+            return JsonResponse({'status': 'ok', 'seconds': task.timer_seconds_remaining, 'running': bool(task.timer_start_time)})
     return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def pause_task_timer(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id, user=request.user)
+        remaining = _get_task_timer_remaining_seconds(task)
+        if remaining is None:
+            return JsonResponse({'status': 'error', 'message': 'Timer not initialized.'}, status=400)
+
+        task.timer_seconds_remaining = remaining
+        task.timer_start_time = None
+        task.save(update_fields=['timer_seconds_remaining', 'timer_start_time'])
+        return JsonResponse({'status': 'ok', 'seconds': remaining, 'running': False})
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def edit_task_timer(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, id=task_id, user=request.user)
+        try:
+            minutes = int(request.POST.get('minutes', 0))
+        except (TypeError, ValueError):
+            return JsonResponse({'status': 'error', 'message': 'Invalid minutes value.'}, status=400)
+
+        if minutes < 1 or minutes > 600:
+            return JsonResponse({'status': 'error', 'message': 'Minutes must be between 1 and 600.'}, status=400)
+
+        task.timer_seconds_remaining = minutes * 60
+        if task.timer_start_time:
+            task.timer_start_time = timezone.now()
+            running = True
+        else:
+            running = False
+        task.save(update_fields=['timer_seconds_remaining', 'timer_start_time'])
+        return JsonResponse({'status': 'ok', 'seconds': task.timer_seconds_remaining, 'running': running})
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def task_timer_status(request, task_id):
+    task = get_object_or_404(Task, id=task_id, user=request.user)
+    remaining = _get_task_timer_remaining_seconds(task)
+    if remaining is None:
+        base_minutes = task.time_estimate_minutes or 25
+        remaining = max(60, int(base_minutes) * 60)
+    return JsonResponse({'status': 'ok', 'seconds': remaining, 'running': bool(task.timer_start_time)})
 
 
 @login_required

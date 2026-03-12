@@ -16,6 +16,9 @@ urlpatterns = [
    
     path('task/start/<int:task_id>/', views.start_task_timer, name='start_task_timer'),
     path('task/add_time/<int:task_id>/', views.add_time_to_timer, name='add_time_to_timer'),
+    path('task/pause/<int:task_id>/', views.pause_task_timer, name='pause_task_timer'),
+    path('task/edit_time/<int:task_id>/', views.edit_task_timer, name='edit_task_timer'),
+    path('task/status/<int:task_id>/', views.task_timer_status, name='task_timer_status'),
     
 
     path('history/', views.task_history_view, name='task_history'),

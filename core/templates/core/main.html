@@ -90,10 +90,18 @@
                     </div>
                 </div>
                 <div class="mt-4 text-center">
-                    <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text">
-                        {{ active_task.time_estimate_minutes|default:"25" }}:00
+                    <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text" data-seconds="{{ active_timer_seconds|default:0 }}" data-running="{% if active_timer_running %}1{% else %}0{% endif %}">
+                        00:00
                     </div>
-                    <button id="start-btn" class="btn btn-accent btn-lg px-5 shadow fw-bold glow-button">START FOCUS</button>
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <button id="start-btn" class="btn btn-accent btn-lg px-4 shadow fw-bold glow-button">START</button>
+                        <button id="pause-btn" class="btn btn-outline-warning btn-lg px-4 fw-bold">PAUSE</button>
+                        <button id="add-time-btn" class="btn btn-outline-info btn-lg px-4 fw-bold">+5 MIN</button>
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                        <input id="edit-minutes-input" type="number" min="1" max="600" class="form-control form-control-dark" style="max-width: 140px;" placeholder="Minutes">
+                        <button id="edit-time-btn" class="btn btn-outline-secondary fw-bold">Set Timer</button>
+                    </div>
                 </div>
 
                 {% if active_task.sub_tasks %}
@@ -342,33 +350,126 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const csrfToken = getCookie('csrftoken');
     const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const addTimeBtn = document.getElementById('add-time-btn');
+    const editTimeBtn = document.getElementById('edit-time-btn');
+    const editMinutesInput = document.getElementById('edit-minutes-input');
     const timerDisplay = document.getElementById('timer-display');
     let timerInterval;
+    let remainingSeconds = 0;
+    let isRunning = false;
 
     {% if active_task %}
     const activeTaskId = "{{ active_task.id }}";
+    const initialSeconds = parseInt(timerDisplay.dataset.seconds || "0", 10);
+    const initialRunning = timerDisplay.dataset.running === "1";
+
+    function renderTimer() {
+        const safeSeconds = Math.max(0, parseInt(remainingSeconds || 0, 10));
+        const m = Math.floor(safeSeconds / 60);
+        const s = safeSeconds % 60;
+        timerDisplay.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+    }
+
+    function stopClientTimer() {
+        clearInterval(timerInterval);
+    }
+
+    function startClientTimer() {
+        stopClientTimer();
+        timerInterval = setInterval(function () {
+            if (!isRunning) {
+                return;
+            }
+            if (remainingSeconds <= 0) {
+                stopClientTimer();
+                timerDisplay.textContent = "DONE!";
+                isRunning = false;
+                return;
+            }
+            remainingSeconds -= 1;
+            renderTimer();
+        }, 1000);
+    }
+
+    function updateTimerState(seconds, running) {
+        remainingSeconds = Math.max(0, parseInt(seconds || 0, 10));
+        isRunning = !!running;
+        renderTimer();
+        if (isRunning) {
+            startClientTimer();
+        } else {
+            stopClientTimer();
+        }
+    }
+
+    function postTimer(url, payload) {
+        const options = {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken}
+        };
+        if (payload) {
+            options.body = new URLSearchParams(payload);
+        }
+        return fetch(url, options).then(r => r.json());
+    }
+
+    updateTimerState(initialSeconds || ({{ active_task.time_estimate_minutes|default:25 }} * 60), initialRunning);
+
     if (startBtn) {
         startBtn.addEventListener('click', () => {
-            fetch(`/task/start/${activeTaskId}/`, {
-                method: 'POST',
-                headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'}
-            }).then(response => response.json()).then(data => {
+            postTimer(`/task/start/${activeTaskId}/`).then(data => {
                 if (data.status === 'ok') {
-                    startTimer(data.seconds);
-                    startBtn.classList.add('d-none');
+                    updateTimerState(data.seconds, data.running);
                 }
             });
         });
     }
-    function startTimer(duration) {
-        let timer = duration;
-        clearInterval(timerInterval);
-        timerInterval = setInterval(function () {
-            let m = parseInt(timer / 60, 10), s = parseInt(timer % 60, 10);
-            timerDisplay.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
-            if (--timer < 0) { clearInterval(timerInterval); timerDisplay.textContent = "DONE!"; }
-        }, 1000);
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+            postTimer(`/task/pause/${activeTaskId}/`).then(data => {
+                if (data.status === 'ok') {
+                    updateTimerState(data.seconds, data.running);
+                }
+            });
+        });
     }
+
+    if (addTimeBtn) {
+        addTimeBtn.addEventListener('click', () => {
+            postTimer(`/task/add_time/${activeTaskId}/`).then(data => {
+                if (data.status === 'ok') {
+                    updateTimerState(data.seconds, data.running);
+                }
+            });
+        });
+    }
+
+    if (editTimeBtn) {
+        editTimeBtn.addEventListener('click', () => {
+            const minutes = parseInt(editMinutesInput.value || "0", 10);
+            if (!minutes || minutes < 1 || minutes > 600) {
+                alert('Please enter minutes between 1 and 600.');
+                return;
+            }
+            postTimer(`/task/edit_time/${activeTaskId}/`, {minutes: String(minutes)}).then(data => {
+                if (data.status === 'ok') {
+                    updateTimerState(data.seconds, data.running);
+                } else if (data.message) {
+                    alert(data.message);
+                }
+            });
+        });
+    }
+
+    fetch(`/task/status/${activeTaskId}/`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                updateTimerState(data.seconds, data.running);
+            }
+        });
     {% endif %}
 });
 </script>
