@@ -53,6 +53,19 @@ def parse_plan_days(plan_text):
     return days
 
 
+BLOCKED_AI_PATTERN = re.compile(
+    r'(sex|sexual|porn|pornography|nude|nudes|hookup|explicit|erotic|intimacy tips|kiss|physical relation|bedroom|adult\s*content|\bxxx\b|\b18\+\b)',
+    re.IGNORECASE,
+)
+
+
+def _contains_blocked_ai_content(*texts):
+    for text in texts:
+        if text and BLOCKED_AI_PATTERN.search(str(text)):
+            return True
+    return False
+
+
 def _get_task_timer_remaining_seconds(task):
     if task.timer_seconds_remaining is None:
         return None
@@ -143,6 +156,10 @@ def create_study_plan_view(request):
         user = request.user
         subject = request.POST.get('subject')
         goal = request.POST.get('goal')
+
+        if _contains_blocked_ai_content(subject, goal):
+            messages.error(request, "This topic is not allowed. Please use a study-focused and safe topic.")
+            return render(request, 'core/create_study_plan.html')
         
         try:
             duration_days = int(request.POST.get('duration_days', 7))
@@ -155,6 +172,10 @@ def create_study_plan_view(request):
 
         if subject and goal:
             plan_text = generate_study_plan_with_ai(subject, goal, duration_days)
+
+            if _contains_blocked_ai_content(plan_text):
+                messages.error(request, "Generated plan was blocked due to unsafe content. Please try a different topic.")
+                return render(request, 'core/create_study_plan.html')
             
             if not plan_text or "Could not generate" in plan_text:
                 messages.error(request, "The AI failed to generate a plan. Please try again.")
@@ -280,6 +301,10 @@ def createtodo_ai(request):
             priority_val = 2
 
         if user_sentence:
+            if _contains_blocked_ai_content(user_sentence):
+                messages.error(request, "This task topic is not allowed. Please enter a safe productivity task.")
+                return redirect('personal_dashboard')
+
             category = get_task_category_with_ai(user_sentence)
             difficulty = get_task_difficulty_with_ai(user_sentence)
             time_estimate = get_time_estimate_with_ai(user_sentence, difficulty)
