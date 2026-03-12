@@ -231,6 +231,7 @@ def view_study_plan_view(request, plan_id):
         
         lines = d['content'].splitlines()
         tasks = []
+        fallback_lines = []
         for line in lines:
             line = line.strip()
             if not line:
@@ -243,6 +244,12 @@ def view_study_plan_view(request, plan_id):
                     processed_line = re.sub(r'\*(.*?)\*', r'<em class="text-secondary" style="font-weight: 500;">\1</em>', processed_line)
                     processed_line = re.sub(r'\_(.*?)\_', r'<em class="text-secondary" style="font-weight: 500;">\1</em>', processed_line)
                     tasks.append(processed_line)
+            elif not line.startswith('#'):
+                fallback_lines.append(line)
+
+        if not tasks and fallback_lines:
+            tasks = fallback_lines
+
         if tasks:
             # Keep URL param slash-safe by passing only day number token.
             day_key = f"Day {d['day']}"

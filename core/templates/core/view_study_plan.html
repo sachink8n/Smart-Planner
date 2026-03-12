@@ -24,6 +24,10 @@
 
         {% for day_key, day_title, tasks in plan_structure %}
             <div class="form-card mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0" style="font-weight: 700; color: var(--text-primary);">{{ day_title }}</h5>
+                    <span class="badge-category">Daily Action</span>
+                </div>
                 <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-end gap-2">
     <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_key %}" class="d-flex flex-column flex-sm-row gap-2 w-100">
          {% csrf_token %}
@@ -56,30 +60,27 @@
 </div>
 
 <style>
-    /* Yeh CSS 'base.html' ki styling ko override karega */
-    
     .steps-list {
-        counter-reset: task-counter; /* Ek naya counter shuru karo */
-        list-style-type: none; /* Default numbering hatao */
+        list-style-type: none;
         padding-left: 0;
+        margin-top: 1rem;
     }
 
     .steps-list li {
-        counter-increment: task-counter; /* Counter ko 1 se badhao */
-        padding-left: 0; /* Purani padding (✓ ke liye) hatao */
-        text-indent: 0; /* Purana indent hatao */
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+        margin-bottom: 0.65rem;
+        line-height: 1.55;
+        color: var(--text-primary);
     }
 
     .steps-list li::before {
-        /* Counter ko "Task 1:", "Task 2:" format mein dikhao */
-        content: 'Task ' counter(task-counter) ': '; 
-        
-        color: var(--accent-color); /* Cyan color */
-        font-weight: bold;
-        margin-right: 0.7em; /* "Task 1:" ke baad space do */
-        
-        /* Purani positioning hatao */
-        position: static; 
+        content: '✓';
+        color: var(--btn-success);
+        font-weight: 700;
+        margin-right: 0.55rem;
     }
 </style>
 {% endblock %}
