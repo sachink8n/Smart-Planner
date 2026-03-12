@@ -4,12 +4,13 @@
 <div class="container-fluid px-2 px-md-0">
 
     <!-- Header Row -->
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-        <a href="{% url 'personal_dashboard' %}" class="btn btn-sm btn-back">
-            <i class="fas fa-arrow-left me-1"></i> Dashboard
-        </a>
-        <h1 class="main-title mb-0 flex-grow-1 text-center">Workflow Board</h1>
-        <div style="width: 110px;"></div><!-- spacer to center title -->
+    <div class="mobile-header">
+        <h1 class="main-title mb-0">Workflow Board</h1>
+        <div class="mobile-header-actions">
+            <a href="{% url 'personal_dashboard' %}" class="btn btn-sm btn-back">
+                <i class="fas fa-arrow-left me-1"></i> Dashboard
+            </a>
+        </div>
     </div>
 
     {% if messages %}
