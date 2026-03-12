@@ -2,12 +2,12 @@
 {% load static %} 
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-9 col-lg-8">
+<div class="page-shell px-0">
+    <div>
         <h1 class="main-title mb-2">{{ plan.subject }} Plan</h1>
         <p class="text-secondary mb-3"><strong>Goal:</strong> {{ plan.goal }} ({{ plan.duration_days }} Days)</p>
 
-        <div class="d-flex justify-content-end gap-2 mb-4">
+        <div class="mobile-header-actions mb-4">
             <a href="{% url 'plan_list' %}" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Back to All Plans
             </a>
@@ -24,11 +24,11 @@
 
         {% for day_title, tasks in plan_structure %}
             <div class="form-card mb-4">
-                <div class="d-flex flex-column align-items-end gap-2">
-    <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_title %}" class="d-flex gap-2">
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-end gap-2">
+    <form method="POST" action="{% url 'add_plan_day_tasks' plan.id day_title %}" class="d-flex flex-column flex-sm-row gap-2 w-100">
          {% csrf_token %}
          
-         <input type="date" name="manual_scheduled_date" class="form-control form-control-sm form-control-dark" style="width: 150px;" required>
+         <input type="date" name="manual_scheduled_date" class="form-control form-control-sm form-control-dark" style="min-width: 150px;" required>
          
          <button type="submit" class="btn btn-sm btn-outline-success">
              <i class="fas fa-plus"></i> Add Tasks
