@@ -476,8 +476,8 @@
                 padding-bottom: 2.25rem;
             }
             .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
             }
             .navbar {
                 padding-bottom: 1.5rem;
@@ -485,11 +485,62 @@
             .navbar-brand {
                 position: static;
                 transform: none;
-                font-size: 1.7rem;
+                font-size: 1.55rem;
                 margin: 0 auto;
                 text-align: center;
                 line-height: 1.1;
             }
+            /* Cards */
+            .form-card, .task-card {
+                padding: 1.1rem;
+                border-radius: 14px;
+            }
+            /* Active task section */
+            .task-header.d-flex {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .task-title {
+                font-size: 1.05rem !important;
+            }
+            /* Timer buttons: stack nicely */
+            #timer-display {
+                font-size: 3.5rem !important;
+            }
+            .d-flex.flex-wrap.justify-content-center.gap-2.mb-3 .btn {
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem;
+            }
+            /* Up Next queue card */
+            .list-group-item {
+                padding: 1rem 0.85rem !important;
+            }
+            .list-group-item .d-flex {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            /* Mood buttons */
+            .mood-grid .btn {
+                font-size: 0.92rem;
+                padding: 0.65rem 0.5rem;
+            }
+            /* AI steps box */
+            .ai-step-card {
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+            .col-md-9, .col-lg-7 {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            /* Badge wrap */
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            /* Auth pages */
             .auth-page main {
                 align-items: flex-start;
                 min-height: auto;
@@ -528,6 +579,15 @@
         @media (max-width: 420px) {
             .nav-hamburger .btn {
                 padding: 0.45rem 0.65rem;
+            }
+            .navbar-brand {
+                font-size: 1.35rem;
+            }
+            .form-card, .task-card {
+                padding: 0.9rem;
+            }
+            #timer-display {
+                font-size: 2.8rem !important;
             }
             .auth-card {
                 padding: 1.15rem;
