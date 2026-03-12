@@ -2,12 +2,11 @@
 {% load static %} 
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12 col-md-9 col-lg-7">
+<div class="mx-auto w-full max-w-5xl px-1 sm:px-2 lg:px-0">
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert dashboard-alert {% if 'success' in message.tags %}dashboard-alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}dashboard-alert-danger{% else %}dashboard-alert-warning{% endif %}"
+                <div class="dashboard-alert rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm sm:px-5 {% if 'success' in message.tags %}dashboard-alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}dashboard-alert-danger{% else %}dashboard-alert-warning{% endif %}"
                     role="alert">
                     {{ message }}
                 </div>
@@ -16,101 +15,103 @@
 
         {% if profile %}
         {% widthratio profile.xp xp_for_next_level 100 as xp_percent %}
-        <div class="mb-5">
+        <div class="mb-6 sm:mb-8">
             <div class="text-center">
-                <span class="badge bg-light text-dark fs-6 p-2 shadow-sm" style="border-radius: 20px;">
+                <span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm sm:text-base">
                     <i class="fas fa-rocket me-1" style="color: #ff6f61;"></i> 
                     Level {{ profile.level }}: {{ profile.get_title }} 
                 </span>
             </div>
-            <div class="progress" style="height: 12px; background-color: #1e1e1e; border-radius: 10px; margin-top: 15px; border: 1px solid #2e2e2e;">
+            <div class="mt-4 h-3 overflow-hidden rounded-full border border-white/10 bg-[#1e1e1e]">
                  <div class="progress-bar progress-bar-striped progress-bar-animated dashboard-progress-bar" role="progressbar"
                      data-progress-width="{{ xp_percent }}"
                      style="background-color: var(--accent-color);"
                      aria-valuenow="{{ profile.xp }}"></div>
             </div>
-            <div class="text-center mt-2">
-                <small class="text-secondary fw-bold">{{ profile.xp }} / {{ xp_for_next_level }} XP</small> 
+            <div class="mt-2 text-center">
+                <small class="font-bold text-[color:var(--text-secondary)]">{{ profile.xp }} / {{ xp_for_next_level }} XP</small>
             </div>
         </div>
         {% endif %}
 
         {% if not active_task %}
-        <div class="form-card text-center mb-4 p-4 border-0 shadow-lg mood-grid" style="background: linear-gradient(145deg, #1e1e1e, #161616); border-radius: 20px;">
-            <h5 class="mb-1 text-white fw-bold"><i class="fas fa-bolt me-2" style="color:var(--accent-color);"></i>How's the energy right now?</h5>
-            <p class="text-secondary small mb-3">Pick your mood. The best matching task from your queue will auto-activate.</p>
-            <div class="d-grid gap-2">
-                <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="btn btn-outline-success py-2"><i class="fas fa-bolt me-2"></i> Focused / High Energy</a>
-                <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="btn btn-outline-warning py-2"><i class="fas fa-smile me-2"></i> Feeling Normal</a>
-                <a href="{% url 'suggest_task_by_mood' 'Easy' %}" class="btn btn-outline-danger py-2"><i class="fas fa-coffee me-2"></i> Low Battery</a>
-                <a href="{% url 'relax_mode' %}" class="btn btn-outline-info py-2"><i class="fas fa-bed me-2"></i> No Mood to Work</a>
+        <section class="mb-5 rounded-[24px] border border-white/10 bg-[linear-gradient(145deg,#1e1e1e,#161616)] p-4 text-center shadow-xl sm:p-6 lg:p-7">
+            <div class="mx-auto max-w-2xl">
+                <h5 class="mb-2 text-xl font-bold text-white sm:text-2xl"><i class="fas fa-bolt mr-2" style="color:var(--accent-color);"></i>How's the energy right now?</h5>
+                <p class="mb-4 text-sm text-[color:var(--text-secondary)] sm:text-base">Pick your mood. The best matching task from your queue will auto-activate.</p>
             </div>
-        </div>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <a href="{% url 'suggest_task_by_mood' 'Hard' %}" class="inline-flex items-center justify-center rounded-2xl border border-green-500/60 px-4 py-3 text-sm font-semibold text-green-400 transition hover:-translate-y-0.5 hover:bg-green-500/10 sm:text-base"><i class="fas fa-bolt mr-2"></i>Focused / High Energy</a>
+                <a href="{% url 'suggest_task_by_mood' 'Moderate' %}" class="inline-flex items-center justify-center rounded-2xl border border-yellow-400/60 px-4 py-3 text-sm font-semibold text-yellow-300 transition hover:-translate-y-0.5 hover:bg-yellow-400/10 sm:text-base"><i class="fas fa-smile mr-2"></i>Feeling Normal</a>
+                <a href="{% url 'suggest_task_by_mood' 'Easy' %}" class="inline-flex items-center justify-center rounded-2xl border border-red-500/60 px-4 py-3 text-sm font-semibold text-red-400 transition hover:-translate-y-0.5 hover:bg-red-500/10 sm:text-base"><i class="fas fa-coffee mr-2"></i>Low Battery</a>
+                <a href="{% url 'relax_mode' %}" class="inline-flex items-center justify-center rounded-2xl border border-cyan-500/60 px-4 py-3 text-sm font-semibold text-cyan-300 transition hover:-translate-y-0.5 hover:bg-cyan-500/10 sm:text-base"><i class="fas fa-bed mr-2"></i>No Mood to Work</a>
+            </div>
+        </section>
         {% endif %}
 
         {% if show_add_forms %}
-            <div class="card mb-4 border-0 shadow-lg glow-on-hover" style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid var(--accent-color) !important;">
-                <div class="card-body p-4">
-                    <h6 class="text-info small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-wand-magic-sparkles me-2"></i>AI QUICK ADD</h6>
+            <div class="mb-4 rounded-[22px] border border-white/10 border-l-[5px] p-4 shadow-xl sm:p-5" style="background:#1e1e1e;border-left-color:var(--accent-color) !important;">
+                <div>
+                    <h6 class="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-cyan-400 sm:text-sm"><i class="fas fa-wand-magic-sparkles mr-2"></i>AI QUICK ADD</h6>
                     <form method="POST" action="{% url 'createtodo_ai' %}">
                         {% csrf_token %}
-                        <div class="row g-2">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-terminal small"></i></span>
-                                    <input type="text" class="form-control form-control-dark border-0" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." style="background: #141414 !important; color: white !important;" required>
+                        <div class="grid gap-3 sm:grid-cols-12">
+                            <div class="sm:col-span-12">
+                                <div class="flex overflow-hidden rounded-xl border border-white/5 bg-[#141414]">
+                                    <span class="inline-flex items-center px-3 text-[color:var(--text-secondary)]"><i class="fas fa-terminal text-sm"></i></span>
+                                    <input type="text" class="w-full border-0 bg-[#141414] px-3 py-3 text-white outline-none placeholder:text-[color:var(--text-secondary)]" name="magic_input" placeholder="e.g., 'Learn about Sorting Algorithms'..." required>
                                 </div>
                             </div>
-                            <div class="col-5 col-sm-4">
-                                <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                            <div class="sm:col-span-4">
+                                <select name="priority" class="w-full rounded-xl border border-white/5 bg-[#141414] px-3 py-3 text-white outline-none">
                                     <option value="1">Low</option>
                                     <option value="2" selected>Medium</option>
                                     <option value="3">High</option>
                                 </select>
                             </div>
-                            <div class="col-7 col-sm-4">
-                                <select name="recurring_type" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                            <div class="sm:col-span-4">
+                                <select name="recurring_type" class="w-full rounded-xl border border-white/5 bg-[#141414] px-3 py-3 text-white outline-none">
                                     <option value="">No Repeat</option>
                                     <option value="DAILY">Daily</option>
                                     <option value="WEEKLY">Weekly</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-sm-4">
-                                <button type="submit" class="btn btn-accent w-100 fw-bold" style="border-radius: 10px; min-height: 43px;">Magic Add</button>
+                            <div class="sm:col-span-4">
+                                <button type="submit" class="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[color:var(--accent-color)] px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-[color:var(--accent-hover)] sm:text-base">Magic Add</button>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="card mb-5 border-0 shadow-lg" style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid #444 !important;">
-                <div class="card-body p-4">
-                    <h6 class="text-secondary small fw-bold mb-3 uppercase tracking-wider"><i class="fas fa-plus-circle me-2"></i>MANUAL TASK</h6>
+            <div class="mb-6 rounded-[22px] border border-white/10 border-l-[5px] p-4 shadow-xl sm:mb-8 sm:p-5" style="background:#1e1e1e;border-left-color:#444 !important;">
+                <div>
+                    <h6 class="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--text-secondary)] sm:text-sm"><i class="fas fa-plus-circle mr-2"></i>MANUAL TASK</h6>
                     <form method="POST" action="{% url 'add_task_manual' %}">
                         {% csrf_token %}
-                        <div class="row g-2">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-dark border-0 text-secondary" style="border-radius: 10px 0 0 10px;"><i class="fas fa-pen-nib small"></i></span>
-                                    <input type="text" class="form-control form-control-dark border-0" name="title" placeholder="Enter task name..." style="background: #141414 !important; color: white !important;" required>
+                        <div class="grid gap-3 sm:grid-cols-12">
+                            <div class="sm:col-span-12">
+                                <div class="flex overflow-hidden rounded-xl border border-white/5 bg-[#141414]">
+                                    <span class="inline-flex items-center px-3 text-[color:var(--text-secondary)]"><i class="fas fa-pen-nib text-sm"></i></span>
+                                    <input type="text" class="w-full border-0 bg-[#141414] px-3 py-3 text-white outline-none placeholder:text-[color:var(--text-secondary)]" name="title" placeholder="Enter task name..." required>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <select name="priority" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                            <div class="sm:col-span-6">
+                                <select name="priority" class="w-full rounded-xl border border-white/5 bg-[#141414] px-3 py-3 text-white outline-none">
                                     <option value="1">Low Priority</option>
                                     <option value="2" selected>Medium Priority</option>
                                     <option value="3">High Priority</option>
                                 </select>
                             </div>
-                            <div class="col-6">
-                                <select name="recurring_type" class="form-select form-control-dark border-0" style="background-color: #141414 !important; color: white !important; border-radius: 10px; padding: 0.6rem;">
+                            <div class="sm:col-span-6">
+                                <select name="recurring_type" class="w-full rounded-xl border border-white/5 bg-[#141414] px-3 py-3 text-white outline-none">
                                     <option value="">No Repeat</option>
                                     <option value="DAILY">Repeat Daily</option>
                                     <option value="WEEKLY">Repeat Weekly</option>
                                 </select>
                             </div>
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-outline-secondary w-100 fw-bold py-2" style="border-radius: 10px;">Add Manually</button>
+                            <div class="sm:col-span-12">
+                                <button type="submit" class="flex w-full items-center justify-center rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/5 sm:text-base">Add Manually</button>
                             </div>
                         </div>
                     </form>
@@ -119,12 +120,12 @@
         {% endif %}
 
         {% if active_task %}
-            <h3 class="mb-3 text-white fw-bold"><i class="fas fa-fire text-warning me-2"></i>Current Mission</h3>
-            <div class="task-card {{ active_task.difficulty }} p-4 mb-5 shadow-lg active-mission-glow" style="border-radius: 20px;">
-                <div class="task-header d-flex justify-content-between">
-                    <div>
-                        <h4 class="task-title mb-2 text-white">{{ active_task.title|safe }}</h4>
-                        <div class="d-flex gap-2">
+            <h3 class="mb-3 text-xl font-bold text-white sm:text-2xl"><i class="fas fa-fire mr-2 text-yellow-400"></i>Current Mission</h3>
+            <section class="task-card {{ active_task.difficulty }} active-mission-glow mb-6 rounded-[24px] p-4 shadow-xl sm:mb-8 sm:p-6">
+                <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                    <div class="min-w-0 flex-1">
+                        <h4 class="task-title mb-3 text-xl font-bold text-white sm:text-2xl">{{ active_task.title|safe }}</h4>
+                        <div class="flex flex-wrap gap-2">
                             <span class="badge-category">{{ active_task.category }}</span>
                             <span class="badge badge-difficulty {{ active_task.difficulty }}">{{ active_task.difficulty }}</span>
                             {% if active_task.is_recurring %}
@@ -133,67 +134,66 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-4 text-center">
+                <div class="mt-6 rounded-[20px] border border-white/5 bg-black/10 p-4 text-center sm:p-5">
                     <div id="timer-display" class="display-1 fw-bold my-3 text-white timer-text" data-seconds="{{ active_timer_seconds|default:0 }}" data-running="{% if active_timer_running %}1{% else %}0{% endif %}" data-task-id="{{ active_task.id }}" data-fallback-seconds="{{ active_task.time_estimate_minutes|default:25|add:'0' }}">
                         00:00
                     </div>
-                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <button id="start-btn" class="btn btn-accent btn-lg px-4 shadow fw-bold glow-button">START</button>
-                        <button id="pause-btn" class="btn btn-outline-warning btn-lg px-4 fw-bold">PAUSE</button>
-                        <button id="add-time-btn" class="btn btn-outline-info btn-lg px-4 fw-bold">+5 MIN</button>
+                    <div class="mb-3 grid gap-2 sm:grid-cols-3">
+                        <button id="start-btn" class="glow-button rounded-xl bg-[color:var(--accent-color)] px-4 py-3 text-sm font-bold text-slate-950 shadow transition hover:bg-[color:var(--accent-hover)] sm:text-base">START</button>
+                        <button id="pause-btn" class="rounded-xl border border-yellow-400/50 px-4 py-3 text-sm font-bold text-yellow-300 transition hover:bg-yellow-400/10 sm:text-base">PAUSE</button>
+                        <button id="add-time-btn" class="rounded-xl border border-cyan-400/50 px-4 py-3 text-sm font-bold text-cyan-300 transition hover:bg-cyan-400/10 sm:text-base">+5 MIN</button>
                     </div>
-                    <div class="d-flex justify-content-center align-items-center gap-2">
-                        <input id="edit-minutes-input" type="number" min="1" max="600" class="form-control form-control-dark" style="max-width: 140px;" placeholder="Minutes">
-                        <button id="edit-time-btn" class="btn btn-outline-secondary fw-bold">Set Timer</button>
+                    <div class="flex flex-col items-center justify-center gap-2 sm:flex-row">
+                        <input id="edit-minutes-input" type="number" min="1" max="600" class="w-full max-w-[180px] rounded-xl border border-white/10 bg-[#141414] px-3 py-3 text-white outline-none" placeholder="Minutes">
+                        <button id="edit-time-btn" class="w-full rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/5 sm:w-auto sm:text-base">Set Timer</button>
                     </div>
                 </div>
 
                 {% if active_task.sub_tasks %}
-                <div class="mt-5 pt-4 border-top border-secondary text-start">
-                    <h6 class="text-info fw-bold mb-4 uppercase tracking-wider" style="letter-spacing: 1px; font-size: 0.85rem;">
-                        <i class="fas fa-robot me-2"></i>AI STEP-BY-STEP GUIDE
+                <div class="mt-6 border-t border-white/10 pt-5 text-start">
+                    <h6 class="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-cyan-400 sm:text-sm">
+                        <i class="fas fa-robot mr-2"></i>AI STEP-BY-STEP GUIDE
                     </h6>
-                    <div id="ai-steps-box" class="d-flex flex-column gap-3">
+                    <div id="ai-steps-box" class="flex flex-col gap-3">
                         <div id="raw-ai-data" class="d-none">{{ active_task.sub_tasks|safe }}</div>
                         <div id="formatted-steps"></div>
                     </div>
                 </div>
                 {% endif %}
 
-                <div class="mt-5 d-flex justify-content-center gap-2">
-                    <a href="{% url 'complete_task' active_task.id %}" class="btn btn-complete flex-fill py-2 fw-bold glow-button-success">COMPLETE</a>
-                    <a href="{% url 'delete_task' active_task.id %}" class="btn btn-delete flex-fill py-2 fw-bold">DELETE</a>
+                <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                    <a href="{% url 'complete_task' active_task.id %}" class="btn btn-complete glow-button-success flex items-center justify-center py-3 text-sm font-bold sm:text-base">COMPLETE</a>
+                    <a href="{% url 'delete_task' active_task.id %}" class="btn btn-delete flex items-center justify-center py-3 text-sm font-bold sm:text-base">DELETE</a>
                 </div>
-            </div>
+            </section>
         {% endif %}
 
         {% if assigned_tasks %}
-            <h3 class="mt-5 mb-3 text-info fw-bold"><i class="fas fa-users-viewfinder me-2"></i>New Team Assignments</h3>
-            <div class="row g-3 mb-5">
+            <h3 class="mt-8 mb-4 text-xl font-bold text-cyan-400 sm:text-2xl"><i class="fas fa-users-viewfinder mr-2"></i>New Team Assignments</h3>
+            <div class="grid gap-4 sm:mb-8">
                 {% for task in assigned_tasks %}
-                    <div class="col-md-12">
-                        <div class="card border-0 shadow-lg" id="card-{{ task.id }}" 
-                             style="background: #1e1e1e; border-radius: 16px; border-left: 5px solid var(--accent-color) !important;">
-                            <div class="card-body p-4">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="text-white mb-0 fw-bold">{{ task.title|safe }}</h5>
-                                    <span class="badge bg-info text-dark">Team Task</span>
+                    <div>
+                        <div class="rounded-[22px] border border-white/10 border-l-[5px] p-4 shadow-xl sm:p-5" id="card-{{ task.id }}"
+                             style="background:#1e1e1e;border-left-color:var(--accent-color) !important;">
+                            <div>
+                                <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <h5 class="mb-0 text-lg font-bold text-white sm:text-xl">{{ task.title|safe }}</h5>
+                                    <span class="inline-flex w-fit items-center rounded-full bg-cyan-300 px-3 py-1 text-xs font-semibold text-slate-950">Team Task</span>
                                 </div>
-                                <p class="small text-secondary mb-3">
-                                    Leader's Deadline: <span id="deadline-{{ task.id }}" class="text-warning fw-bold">{{ task.deadline|date:"Y-m-d" }}</span>
+                                <p class="mb-3 text-sm text-[color:var(--text-secondary)]">
+                                    Leader's Deadline: <span id="deadline-{{ task.id }}" class="font-bold text-yellow-300">{{ task.deadline|date:"Y-m-d" }}</span>
                                 </p>
-                                <form method="POST" action="{% url 'schedule_assigned_task' task.id %}" onsubmit="return validateDate('{{ task.id }}')" class="row g-2">
+                                <form method="POST" action="{% url 'schedule_assigned_task' task.id %}" onsubmit="return validateDate('{{ task.id }}')" class="grid gap-3 sm:grid-cols-12">
                                     {% csrf_token %}
-                                    <div class="col-md-8">
+                                    <div class="sm:col-span-8">
                                         <input type="date" id="date-input-{{ task.id }}" name="my_schedule_date" 
-                                               class="form-control form-control-dark border-0" 
-                                               style="background: #141414 !important; color: white !important;"
+                                               class="w-full rounded-xl border border-white/5 bg-[#141414] px-3 py-3 text-white outline-none"
                                                onchange="checkDeadline('{{ task.id }}')" required>
                                     </div>
-                                    <div class="col-md-4">
-                                        <button type="submit" class="btn btn-accent w-100 fw-bold">Schedule</button>
+                                    <div class="sm:col-span-4">
+                                        <button type="submit" class="flex w-full items-center justify-center rounded-xl bg-[color:var(--accent-color)] px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-[color:var(--accent-hover)] sm:text-base">Schedule</button>
                                     </div>
-                                    <div id="alert-{{ task.id }}" class="col-12 text-danger small mt-2 d-none fw-bold">
+                                    <div id="alert-{{ task.id }}" class="sm:col-span-12 d-none mt-1 text-sm font-bold text-red-400">
                                         <i class="fas fa-exclamation-triangle"></i> Red Alert: Past Deadline!
                                     </div>
                                 </form>
@@ -205,23 +205,23 @@
         {% endif %}
 
         {% if pending_tasks %}
-            <div class="d-flex align-items-center justify-content-between mt-5 mb-3 flex-wrap gap-2">
-                <h3 class="text-secondary fw-bold mb-0"><i class="fas fa-layer-group me-2"></i>Up Next</h3>
+            <div class="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 class="mb-0 text-xl font-bold text-[color:var(--text-secondary)] sm:text-2xl"><i class="fas fa-layer-group mr-2"></i>Up Next</h3>
                 {% if not active_task %}
-                    <span class="badge px-3 py-2" style="background:rgba(0,188,212,0.15);color:var(--accent-color);border:1px solid rgba(0,188,212,0.3);border-radius:20px;font-size:0.8rem;">
-                        <i class="fas fa-bolt me-1"></i>Pick mood above to activate
+                    <span class="inline-flex w-fit items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-[color:var(--accent-color)] sm:text-sm">
+                        <i class="fas fa-bolt mr-1"></i>Pick mood above to activate
                     </span>
                 {% endif %}
             </div>
-            <div class="list-group border-0">
+            <div class="grid gap-4">
                 {% for task in pending_tasks %}
-                    <div class="list-group-item mb-3 p-3 border-0 shadow-sm" style="background: #1e1e1e; border-radius: 16px; border-left: 6px solid var(--accent-color) !important;">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="task-content text-white fw-medium mb-2" style="font-size: 1rem; line-height: 1.5; word-break: break-word;">
+                    <div class="rounded-[20px] border border-white/10 border-l-[6px] p-4 shadow-lg" style="background:#1e1e1e;border-left-color:var(--accent-color) !important;">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="mb-3 break-words text-base font-medium leading-6 text-white sm:text-lg">
                                     {{ task.title|safe }}
                                 </div>
-                                <div class="d-flex gap-2 flex-wrap">
+                                <div class="flex flex-wrap gap-2">
                                     <span class="badge {% if task.team %}bg-info text-dark{% else %}bg-primary text-white{% endif %} px-2 py-1">
                                         {% if task.team %}Team{% else %}Personal{% endif %}
                                     </span>
@@ -232,14 +232,13 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <a href="{% url 'delete_task' task.id %}" class="btn btn-sm btn-outline-danger border-0 flex-shrink-0"><i class="fas fa-times"></i></a>
+                            <a href="{% url 'delete_task' task.id %}" class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-red-500/20 text-red-400 transition hover:bg-red-500/10"><i class="fas fa-times"></i></a>
                         </div>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-    </div>
 </div>
 
 <style>
