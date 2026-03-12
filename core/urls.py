@@ -38,6 +38,8 @@ urlpatterns = [
     path('teams/<int:team_id>/invite/', views.invite_member_view, name='invite_member'),
 
     path('generate-plan/', views.create_study_plan_view, name='generate_plan'),
+        path('kanban/', views.kanban_board_view, name='kanban_board'),
+        path('kanban/update-status/<int:task_id>/', views.update_task_status_view, name='update_task_status'),
 
     path('study-plan/create/', views.create_study_plan_view, name='create_study_plan'),
     path('study-plan/<int:plan_id>/', views.view_study_plan_view, name='view_study_plan'),

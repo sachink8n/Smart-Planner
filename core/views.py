@@ -66,6 +66,16 @@ def _contains_blocked_ai_content(*texts):
     return False
 
 
+def _can_manage_task(user, task):
+    if task.user_id == user.id:
+        return True
+    if task.assignee_id == user.id:
+        return True
+    if task.team and task.team.owner_id == user.id:
+        return True
+    return False
+
+
 def _get_task_timer_remaining_seconds(task):
     if task.timer_seconds_remaining is None:
         return None
@@ -284,6 +294,53 @@ def personal_dashboard_view(request):
         'active_timer_running': active_timer_running,
     }
     return render(request, 'core/main.html', context)
+
+
+@login_required
+def kanban_board_view(request):
+    tasks = (
+        Todo.objects.select_related('team', 'assignee')
+        .filter(Q(user=request.user) | Q(assignee=request.user))
+        .exclude(status='DELETED')
+        .order_by('-priority', 'created')
+        .distinct()
+    )
+
+    todo_tasks = [task for task in tasks if task.status == 'INBOX']
+    progress_tasks = [task for task in tasks if task.status == 'ACTIVE']
+    done_tasks = [task for task in tasks if task.status == 'COMPLETED']
+
+    context = {
+        'todo_tasks': todo_tasks,
+        'progress_tasks': progress_tasks,
+        'done_tasks': done_tasks,
+    }
+    return render(request, 'core/kanban_board.html', context)
+
+
+@login_required
+def update_task_status_view(request, task_id):
+    task = get_object_or_404(Todo, id=task_id)
+
+    if not _can_manage_task(request.user, task):
+        messages.error(request, "You do not have permission to update this task.")
+        return redirect('kanban_board')
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status', 'INBOX')
+        allowed_status = {'INBOX', 'ACTIVE', 'COMPLETED'}
+        if new_status in allowed_status:
+            task.status = new_status
+            if new_status == 'COMPLETED':
+                task.datecompleted = timezone.now()
+            else:
+                task.datecompleted = None
+            task.save(update_fields=['status', 'datecompleted'])
+            messages.success(request, f"Task moved to {new_status.title()}.")
+        else:
+            messages.error(request, "Invalid status update.")
+
+    return redirect('kanban_board')
 
 
 @login_required

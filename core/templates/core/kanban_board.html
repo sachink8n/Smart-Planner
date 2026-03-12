@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <h1 class="main-title text-center mb-4">Kanban Board</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags or 'danger' in message.tags %}alert-danger{% else %}alert-warning{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-4">
+            <div class="form-card h-100">
+                <h4 class="mb-3 text-info">To Do</h4>
+                {% for task in todo_tasks %}
+                    <div class="kanban-card mb-3">
+                        <h6 class="mb-2">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <form method="post" action="{% url 'update_task_status' task.id %}">
+                            {% csrf_token %}
+                            <select name="status" class="form-select form-select-sm mb-2">
+                                <option value="INBOX" selected>To Do</option>
+                                <option value="ACTIVE">In Progress</option>
+                                <option value="COMPLETED">Done</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-info w-100">Update</button>
+                        </form>
+                    </div>
+                {% empty %}
+                    <p class="text-secondary">No tasks in To Do.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="form-card h-100">
+                <h4 class="mb-3 text-warning">In Progress</h4>
+                {% for task in progress_tasks %}
+                    <div class="kanban-card mb-3">
+                        <h6 class="mb-2">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <form method="post" action="{% url 'update_task_status' task.id %}">
+                            {% csrf_token %}
+                            <select name="status" class="form-select form-select-sm mb-2">
+                                <option value="INBOX">To Do</option>
+                                <option value="ACTIVE" selected>In Progress</option>
+                                <option value="COMPLETED">Done</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Update</button>
+                        </form>
+                    </div>
+                {% empty %}
+                    <p class="text-secondary">No tasks in progress.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="form-card h-100">
+                <h4 class="mb-3 text-success">Done</h4>
+                {% for task in done_tasks %}
+                    <div class="kanban-card mb-3">
+                        <h6 class="mb-2">{{ task.title }}</h6>
+                        <div class="small text-secondary mb-2">Priority: {{ task.get_priority_display }}</div>
+                        <form method="post" action="{% url 'update_task_status' task.id %}">
+                            {% csrf_token %}
+                            <select name="status" class="form-select form-select-sm mb-2">
+                                <option value="INBOX">To Do</option>
+                                <option value="ACTIVE">In Progress</option>
+                                <option value="COMPLETED" selected>Done</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-success w-100">Update</button>
+                        </form>
+                    </div>
+                {% empty %}
+                    <p class="text-secondary">No completed tasks.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.kanban-card {
+    background: var(--card-darker);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.85rem;
+}
+</style>
+{% endblock %}
