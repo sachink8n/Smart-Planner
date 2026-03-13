@@ -281,9 +281,16 @@ def personal_dashboard_view(request):
     
     # SARE TASKS (Personal + Team + Study Plan)
     # Exclude logic zaroori hai taaki 'assigned_tasks' aur 'active' yahan na dikhein
-    all_my_tasks = Todo.objects.select_related('team', 'assignee', 'study_plan').filter(
-        Q(user=user) | Q(assignee=user)
-    ).exclude(status='DELETED').distinct().order_by('scheduled_date', 'created')
+    # Personal dashboard should show:
+    # 1) personal tasks created by user (no team), and
+    # 2) only those team tasks that are assigned to current user.
+    all_my_tasks = (
+        Todo.objects.select_related('team', 'assignee', 'study_plan')
+        .filter(Q(user=user, team__isnull=True) | Q(assignee=user))
+        .exclude(status='DELETED')
+        .distinct()
+        .order_by('scheduled_date', 'created')
+    )
 
     active_task = all_my_tasks.filter(status='ACTIVE').first()
     show_mood = True if not active_task else False
@@ -315,7 +322,7 @@ def personal_dashboard_view(request):
 def kanban_board_view(request):
     tasks = (
         Todo.objects.select_related('team', 'assignee')
-        .filter(Q(user=request.user) | Q(assignee=request.user))
+        .filter(Q(user=request.user, team__isnull=True) | Q(assignee=request.user))
         .exclude(status='DELETED')
         .order_by('-priority', 'created')
         .distinct()
@@ -821,6 +828,48 @@ def invite_member_view(request, team_id):
     else:
         messages.error(request, "Only the team owner can invite members.")
         
+    return redirect('team_dashboard', team_id=team.id)
+
+
+@login_required
+def update_team_name_view(request, team_id):
+    team = get_object_or_404(Team, id=team_id)
+
+    if request.user != team.owner:
+        messages.error(request, "Only the team owner can rename the team.")
+        return redirect('team_dashboard', team_id=team.id)
+
+    if request.method == 'POST':
+        new_name = request.POST.get('team_name', '').strip()
+        if not new_name:
+            messages.error(request, "Team name cannot be empty.")
+            return redirect('team_dashboard', team_id=team.id)
+
+        if len(new_name) > 100:
+            messages.error(request, "Team name is too long.")
+            return redirect('team_dashboard', team_id=team.id)
+
+        team.name = new_name
+        team.save(update_fields=['name'])
+        messages.success(request, "Team name updated successfully.")
+
+    return redirect('team_dashboard', team_id=team.id)
+
+
+@login_required
+def delete_team_view(request, team_id):
+    team = get_object_or_404(Team, id=team_id)
+
+    if request.user != team.owner:
+        messages.error(request, "Only the team owner can delete the team.")
+        return redirect('team_dashboard', team_id=team.id)
+
+    if request.method == 'POST':
+        team_name = team.name
+        team.delete()
+        messages.success(request, f"Team '{team_name}' deleted successfully.")
+        return redirect('team_list')
+
     return redirect('team_dashboard', team_id=team.id)
 
 
