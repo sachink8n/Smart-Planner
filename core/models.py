@@ -99,6 +99,15 @@ class Todo(models.Model):
 
     sub_tasks = models.TextField(null=True, blank=True)
 
+    quiz_questions = models.JSONField(null=True, blank=True)
+    quiz_pending = models.BooleanField(default=False)
+    quiz_submitted = models.BooleanField(default=False)
+    quiz_awarded = models.BooleanField(default=False)
+    quiz_score = models.IntegerField(default=0)
+    quiz_total_questions = models.IntegerField(default=0)
+    quiz_completed_at = models.DateTimeField(null=True, blank=True)
+    quiz_submitted_at = models.DateTimeField(null=True, blank=True)
+
     priority = models.IntegerField(choices=PRIORITY_CHOICES, default=2)
     is_recurring = models.BooleanField(default=False)
     recurring_type = models.CharField(max_length=10, choices=RECURRING_CHOICES, blank=True, default='')
