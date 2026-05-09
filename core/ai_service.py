@@ -1,4 +1,5 @@
 import os
+import json
 import re
 from pathlib import Path
 
@@ -76,14 +77,13 @@ def get_sub_tasks_with_ai(sentence):
     You are an expert productivity coach. A user wants to tackle a big task. 
     Task: "{sentence}"
 
-    Break this task down into 3-5 highly detailed and actionable sub-tasks. 
-    For each sub-task:
-    1.  Start with a clear action verb.
-    2.  Briefly explain *why* this step is important or *how* to approach it.
-    3.  Use markdown **bold** for the main action/concept.
-    4.  Use markdown *italics* for any specific tools or key terms.
+    Return a structured guide with these sections in this exact order:
+    1. Prerequisites: 2-4 bullets about what should be ready before starting.
+    2. Step-by-step path: 3-5 bullets with clear action verbs.
+    3. Keep each bullet short, practical, and beginner-friendly.
+    4. Use markdown **bold** for key actions and *italics* for tools or terms.
 
-    Return ONLY the bulleted list. Do not add any intro or conclusion.
+    Return ONLY the list content. Do not add any intro or conclusion.
 
     EXAMPLE:
     USER GOAL: "Learn Django REST Framework"
@@ -112,6 +112,120 @@ def get_sub_tasks_with_ai(sentence):
         return [raw_output.strip()]
         
     return sub_tasks
+
+
+def _fallback_quiz_questions(title, summary_text, difficulty):
+    clean_summary = summary_text.strip()[:300] if summary_text else ""
+    topic_hint = title.strip() if title else "the task"
+    return [
+        {
+            "question": f"What is the main goal of {topic_hint}?",
+            "options": [
+                f"Complete {topic_hint.lower()} efficiently",
+                "Ignore the task completely",
+                "Delay it indefinitely",
+                "Change the task into something unrelated",
+            ],
+            "answer": f"Complete {topic_hint.lower()} efficiently",
+            "explanation": "The task quiz should confirm understanding of the actual goal.",
+        },
+        {
+            "question": f"Which approach best matches the recommended difficulty for this task ({difficulty})?",
+            "options": [
+                "Use a structured, focused approach",
+                "Rush without planning",
+                "Skip all prerequisites",
+                "Do it randomly",
+            ],
+            "answer": "Use a structured, focused approach",
+            "explanation": "A planned approach helps the user complete the work correctly.",
+        },
+        {
+            "question": "What should you do first before starting?",
+            "options": [
+                "Review prerequisites",
+                "Submit the task immediately",
+                "Close the browser",
+                "Forget the instructions",
+            ],
+            "answer": "Review prerequisites",
+            "explanation": "Prerequisites are part of the new guided workflow.",
+        },
+        {
+            "question": "What is the most productive next step after preparation?",
+            "options": [
+                "Follow the step-by-step path",
+                "Stop working permanently",
+                "Ignore the plan",
+                "Repeat the title only",
+            ],
+            "answer": "Follow the step-by-step path",
+            "explanation": "The app now trains users with sequential action steps.",
+        },
+        {
+            "question": f"Which summary best describes the task context? {clean_summary[:80] if clean_summary else ''}",
+            "options": [
+                "It is about the same task and its key steps",
+                "It is about a random unrelated topic",
+                "It has no relation to the task",
+                "It only checks spelling",
+            ],
+            "answer": "It is about the same task and its key steps",
+            "explanation": "The fallback quiz checks understanding of the task content.",
+        },
+    ]
+
+
+def generate_task_quiz_with_ai(title, summary_text='', difficulty='Moderate', question_count=5):
+    """
+    Creates 5-7 MCQ questions for a completed task.
+    """
+    question_count = max(5, min(int(question_count or 5), 7))
+    prompt = f"""
+You are an expert tutor creating a post-task quiz.
+
+Task title: {title}
+Difficulty: {difficulty}
+Task summary / steps:
+{summary_text or 'No extra summary available.'}
+
+Generate exactly {question_count} multiple-choice questions.
+Rules:
+1. Return ONLY valid JSON.
+2. Output must be a JSON array.
+3. Each item must have keys: question, options, answer, explanation.
+4. options must be an array of exactly 4 strings.
+5. answer must match one of the options exactly.
+6. Questions should test understanding, prerequisites, step order, and practical application.
+7. Keep language simple and clear.
+"""
+
+    raw_output = call_groq_api(prompt, max_completion_tokens=1800, temperature=0.2)
+    if raw_output:
+        try:
+            parsed = json.loads(raw_output)
+            if isinstance(parsed, list) and parsed:
+                cleaned = []
+                for item in parsed[:question_count]:
+                    if not isinstance(item, dict):
+                        continue
+                    options = item.get('options') or []
+                    answer = item.get('answer') or ''
+                    question = (item.get('question') or '').strip()
+                    explanation = (item.get('explanation') or '').strip()
+                    if question and isinstance(options, list) and len(options) == 4 and answer in options:
+                        cleaned.append({
+                            'question': question,
+                            'options': [str(option).strip() for option in options],
+                            'answer': str(answer).strip(),
+                            'explanation': explanation,
+                        })
+                if len(cleaned) >= question_count:
+                    return cleaned[:question_count]
+        except Exception:
+            pass
+
+    return _fallback_quiz_questions(title, summary_text, difficulty)[:question_count]
 
 
 def generate_study_plan_with_ai(subject, goal, duration_days):
