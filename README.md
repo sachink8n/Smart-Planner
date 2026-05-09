@@ -10,16 +10,19 @@ Smart Planner helps users create and execute tasks based on current energy/mood,
   - category classification
   - difficulty estimation
   - time estimate
-  - actionable subtasks
+  - prerequisite guidance
+  - step-by-step task breakdown
 - Mood-based task activation (Easy/Moderate/Hard energy mapping)
 - Personal and team task workflows
 - Kanban board for INBOX / ACTIVE / COMPLETED states
 - Pomodoro-style task timer with start/pause/add-time/edit
 - Recurring tasks (daily/weekly auto-reset after completion)
+- Post-completion MCQ quiz with AI scoring and XP rewards
 - AI-powered study plan generation (1 to 90 days)
 - Day-wise extraction of study plan tasks into dashboard tasks
 - OTP-based signup verification and password reset
 - Profile analytics, XP levels, and badge unlocking
+- Backend query optimizations with select_related/prefetch_related on hot pages
 - Render-ready deployment config with Gunicorn + WhiteNoise
 
 ## Tech Stack
@@ -51,6 +54,7 @@ Smart Planner helps users create and execute tasks based on current energy/mood,
 ### 1. Task Management
 
 - Create tasks manually or with AI.
+- AI-generated tasks now include prerequisites and a step-by-step execution path.
 - Task states:
   - `INBOX`
   - `ACTIVE`
@@ -81,7 +85,16 @@ Each active task supports a timer with endpoints for:
 
 Recurring tasks (`DAILY` / `WEEKLY`) are automatically reset back to `INBOX` on completion and moved to the next cycle date.
 
-### 5. Team Collaboration
+### 5. Post-Completion Quiz
+
+When a task is completed, Smart Planner opens a short AI-generated MCQ quiz.
+
+- The quiz usually contains 5 questions.
+- Answers are checked in the backend and marks are shown to the user.
+- XP is awarded based on quiz performance.
+- Strong quiz performance can unlock a badge.
+
+### 6. Team Collaboration
 
 - Create teams
 - Invite members
@@ -89,14 +102,14 @@ Recurring tasks (`DAILY` / `WEEKLY`) are automatically reset back to `INBOX` on 
 - Member-side scheduling for assigned tasks
 - Team dashboard for active/inbox/completed visibility
 
-### 6. Study Plan System
+### 7. Study Plan System
 
 - Generate AI study plans by subject, goal, and duration.
 - Plan parser extracts `## Day N: Title` blocks.
 - Add selected day tasks from a plan directly to dashboard.
 - Track and complete/delete plans.
 
-### 7. Authentication and Recovery
+### 8. Authentication and Recovery
 
 - OTP-based signup flow
 - OTP resend flow
@@ -104,11 +117,12 @@ Recurring tasks (`DAILY` / `WEEKLY`) are automatically reset back to `INBOX` on 
 - Strong password checks
 - Local development fallback message if email delivery fails
 
-### 8. Gamification and Analytics
+### 9. Gamification and Analytics
 
 - XP and level progression
 - Badge system based on completion behavior
 - Productivity slot analytics (time-of-day work patterns)
+- Quiz-based XP boosts after task completion
 
 ## Data Model Overview
 
@@ -121,6 +135,8 @@ Main models in `core/models.py`:
 - `Team`
 - `StudyPlan`
 - `OTPVerification`
+
+`Todo` now also stores quiz state and quiz results for completed tasks.
 
 ## Environment Variables
 
@@ -264,6 +280,8 @@ Current tests in `core/tests.py` cover:
 - signup pending-user reuse behavior
 - OTP activation flow
 - study plan view handling edge case day titles
+- task completion redirecting to quiz
+- quiz submission and XP reward flow
 
 ## Security and Content Guardrails
 
@@ -276,8 +294,10 @@ Current tests in `core/tests.py` cover:
 
 - Add API layer (DRF) for mobile or SPA clients
 - Increase test coverage for team + recurring + timer flows
+- Add more robust caching for dashboard/kanban pages if traffic grows
 - Improve background reminder scheduling setup/documentation
 - Add role permissions for team managers beyond owner/member
+- Move more heavy AI work to background jobs for large-scale production use
 - Add production-grade observability/log aggregation
 
 ## License
