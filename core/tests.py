@@ -3,6 +3,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+import json
 from unittest.mock import patch
 
 from .models import OTPVerification, StudyPlan, Todo, Profile
@@ -205,3 +206,66 @@ class TaskQuizFlowTests(TestCase):
 		self.assertEqual(task.quiz_score, 5)
 		self.assertEqual(task.quiz_total_questions, 5)
 		self.assertGreater(profile.xp, starting_xp)
+
+	@patch('core.ai_service.call_groq_api')
+	def test_add_magic_generates_prerequisites_heading(self, mock_call_groq_api):
+		mock_call_groq_api.return_value = (
+			"Prerequisites:\n"
+			"- Python installed\n"
+			"- Django project set up\n"
+			"Step-by-step path:\n"
+			"- Read the concept\n"
+			"- Work through examples"
+		)
+
+		from .ai_service import get_sub_tasks_with_ai
+
+		outline = get_sub_tasks_with_ai('Operating System Deadlock')
+
+		self.assertIn('Prerequisites:', outline)
+		self.assertIn('Step-by-step path:', outline)
+		self.assertIn('- Python installed', outline)
+		self.assertIn('- Work through examples', outline)
+
+	@patch('core.ai_service.call_groq_api')
+	def test_quiz_generation_rejects_generic_process_questions(self, mock_call_groq_api):
+		mock_call_groq_api.return_value = json.dumps([
+			{
+				'question': 'What should you do first before starting?',
+				'options': ['Review prerequisites', 'Submit it', 'Close the browser', 'Ignore the task'],
+				'answer': 'Review prerequisites',
+				'explanation': 'Generic workflow question.',
+			},
+			{
+				'question': 'What is the most productive next step after preparation?',
+				'options': ['Follow the step-by-step path', 'Stop working', 'Ignore the plan', 'Repeat the title'],
+				'answer': 'Follow the step-by-step path',
+				'explanation': 'Generic workflow question.',
+			},
+			{
+				'question': 'Which summary best describes the task context?',
+				'options': ['It is about the same task and its key steps', 'It is about a random unrelated topic', 'It has no relation to the task', 'It only checks spelling'],
+				'answer': 'It is about the same task and its key steps',
+				'explanation': 'Generic workflow question.',
+			},
+			{
+				'question': 'What should you do first before starting?',
+				'options': ['Review prerequisites', 'Submit it', 'Close the browser', 'Ignore the task'],
+				'answer': 'Review prerequisites',
+				'explanation': 'Generic workflow question.',
+			},
+			{
+				'question': 'Which approach best matches the recommended difficulty for this task (Hard)?',
+				'options': ['Use a structured, focused approach', 'Rush without planning', 'Skip all prerequisites', 'Do it randomly'],
+				'answer': 'Use a structured, focused approach',
+				'explanation': 'Generic workflow question.',
+			},
+		])
+
+		from .ai_service import generate_task_quiz_with_ai
+
+		questions = generate_task_quiz_with_ai('Operating System Deadlock', 'Focus on deadlock conditions and prevention.', 'Hard', 5)
+
+		self.assertEqual(len(questions), 5)
+		self.assertTrue(all('deadlock' in question['question'].lower() or 'operating system' in question['question'].lower() for question in questions))
+		self.assertFalse(any('before starting' in question['question'].lower() for question in questions))
