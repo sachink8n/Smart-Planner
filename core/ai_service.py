@@ -81,99 +81,158 @@ def get_sub_tasks_with_ai(sentence):
     1. Prerequisites: 2-4 bullets about what should be ready before starting.
     2. Step-by-step path: 3-5 bullets with clear action verbs.
     3. Keep each bullet short, practical, and beginner-friendly.
-    4. Use markdown **bold** for key actions and *italics* for tools or terms.
+    4. Use a plain text outline with section headings and bullet points.
 
-    Return ONLY the list content. Do not add any intro or conclusion.
+    Return ONLY the outline. Do not add any intro or conclusion.
 
     EXAMPLE:
     USER GOAL: "Learn Django REST Framework"
     YOUR OUTPUT:
-    - **Research** core concepts: Start by understanding *serializers* (how data is converted), *viewssets* (how logic is handled), and *routers* (how URLs are created).
-    - **Set up** a basic project: Install *djangorestframework* and add it to `INSTALLED_APPS` in your settings.py file to create the foundation.
-    - **Build** a simple "read-only" API: Create a 'Book' model and a 'BookSerializer' to see how your model's data is converted to JSON.
-    - **Test** the API: Use *Postman* or your browser to make a GET request to your new endpoint and see the live JSON data.
-    - **Implement** basic permissions: Add `IsAuthenticated` to your view to understand how to protect your API.
+    Prerequisites:
+    - Python installed
+    - Django project set up
+    - Basic REST concepts understood
+
+    Step-by-step path:
+    - Review serializers and views
+    - Set up the app and install dependencies
+    - Build a simple read-only API
+    - Test the endpoint
+    - Add permissions
     """
     
     raw_output = call_groq_api(prompt + f'\nNOW, DO THE SAME FOR THIS TASK: "{sentence}"\nYOUR OUTPUT:')
     print(f"AI Raw Output (Expert Sub-tasks): {raw_output}")
 
     sub_tasks = []
+    seen_lines = set()
+
+    def add_line(line):
+        normalized = line.strip()
+        if normalized and normalized not in seen_lines:
+            sub_tasks.append(normalized)
+            seen_lines.add(normalized)
+
+    def normalize_heading(line):
+        normalized = re.sub(r'^#+\s*', '', line).strip()
+        normalized = re.sub(r'\s*:\s*$', '', normalized)
+        lowered = normalized.lower()
+        if lowered in {'prerequisites', 'prerequisite'}:
+            return 'Prerequisites:'
+        if lowered in {'step-by-step path', 'step by step path', 'steps', 'execution steps'}:
+            return 'Step-by-step path:'
+        return f"{normalized}:" if normalized else ''
+
     for line in raw_output.splitlines():
-        if line.strip().startswith(('-', '*')) or re.match(r'^\d+\.', line.strip()):
-            processed_line = line.strip("-* ").strip()
-            # **Bold** to <strong style="color: var(--accent-color);">...</strong>
-            processed_line = re.sub(r'\*\*(.*?)\*\*', r'<strong style="color: var(--accent-color);">\1</strong>', processed_line)
-            # *Italic* or _Italic_ to <em style="color: #bdbdbd; font-style: italic;">...</em>
-            processed_line = re.sub(r'[\*\_]([^\*\_]+)[\*\_]', r'<em style="color: #bdbdbd; font-style: italic;">\1</em>', processed_line)
-            sub_tasks.append(processed_line)
+        clean_line = line.strip()
+        if not clean_line:
+            continue
+
+        if re.match(r'^(#{1,6}\s*)?(prerequisites?|step[- ]?by[- ]step path|steps?|execution steps?)\s*:?$', clean_line, re.IGNORECASE):
+            add_line(normalize_heading(clean_line))
+            continue
+
+        if clean_line.startswith(('-', '*')) or re.match(r'^\d+[\.)]\s*', clean_line):
+            processed_line = re.sub(r'^[\-\*\d\.)\s]+', '', clean_line).strip()
+            add_line(f"- {processed_line}")
     
     if not sub_tasks and raw_output:
-        return [raw_output.strip()]
+        return raw_output.strip()
         
-    return sub_tasks
+    return "\n".join(sub_tasks)
 
 
 def _fallback_quiz_questions(title, summary_text, difficulty):
     clean_summary = summary_text.strip()[:300] if summary_text else ""
-    topic_hint = title.strip() if title else "the task"
+    topic_hint = title.strip() if title else "the topic"
+    topic_focus = topic_hint.lower()
     return [
         {
-            "question": f"What is the main goal of {topic_hint}?",
+            "question": f"What is the main idea behind {topic_hint}?",
             "options": [
-                f"Complete {topic_hint.lower()} efficiently",
-                "Ignore the task completely",
-                "Delay it indefinitely",
-                "Change the task into something unrelated",
+                f"The concept described by {topic_focus}",
+                "A random productivity habit",
+                "An unrelated scheduling method",
+                "A completely different subject",
             ],
-            "answer": f"Complete {topic_hint.lower()} efficiently",
-            "explanation": "The task quiz should confirm understanding of the actual goal.",
+            "answer": f"The concept described by {topic_focus}",
+            "explanation": "The quiz should stay anchored to the topic named in the task.",
         },
         {
-            "question": f"Which approach best matches the recommended difficulty for this task ({difficulty})?",
+            "question": f"Which option is most closely related to {topic_hint}?",
             "options": [
-                "Use a structured, focused approach",
-                "Rush without planning",
-                "Skip all prerequisites",
-                "Do it randomly",
+                f"A key idea connected to {topic_focus}",
+                "A preparation tip for a generic chore",
+                "A random motivational quote",
+                "An unrelated time-management trick",
             ],
-            "answer": "Use a structured, focused approach",
-            "explanation": "A planned approach helps the user complete the work correctly.",
+            "answer": f"A key idea connected to {topic_focus}",
+            "explanation": "The question should test the subject matter, not the workflow.",
         },
         {
-            "question": "What should you do first before starting?",
+            "question": f"Which statement best matches the topic of {topic_hint}?",
             "options": [
-                "Review prerequisites",
-                "Submit the task immediately",
-                "Close the browser",
-                "Forget the instructions",
+                f"It describes an important concept in {topic_focus}",
+                "It describes an unrelated reminder",
+                "It is about finishing a checklist",
+                "It is about ignoring the topic",
             ],
-            "answer": "Review prerequisites",
-            "explanation": "Prerequisites are part of the new guided workflow.",
+            "answer": f"It describes an important concept in {topic_focus}",
+            "explanation": "Use the topic itself as the basis for the quiz.",
         },
         {
-            "question": "What is the most productive next step after preparation?",
+            "question": f"What kind of knowledge should this quiz check for {topic_hint}?",
             "options": [
-                "Follow the step-by-step path",
-                "Stop working permanently",
-                "Ignore the plan",
-                "Repeat the title only",
+                "Understanding of the topic",
+                "How quickly you can submit",
+                "Whether you copied the title",
+                "Whether you skipped the task",
             ],
-            "answer": "Follow the step-by-step path",
-            "explanation": "The app now trains users with sequential action steps.",
+            "answer": "Understanding of the topic",
+            "explanation": "The quiz should measure subject knowledge, not task-management steps.",
         },
         {
-            "question": f"Which summary best describes the task context? {clean_summary[:80] if clean_summary else ''}",
+            "question": f"Which summary best describes {topic_hint}? {clean_summary[:80] if clean_summary else ''}",
             "options": [
-                "It is about the same task and its key steps",
-                "It is about a random unrelated topic",
-                "It has no relation to the task",
-                "It only checks spelling",
+                "It matches the topic and the main idea",
+                "It talks about a random unrelated subject",
+                "It avoids the topic entirely",
+                "It only checks formatting",
             ],
-            "answer": "It is about the same task and its key steps",
-            "explanation": "The fallback quiz checks understanding of the task content.",
+            "answer": "It matches the topic and the main idea",
+            "explanation": "The fallback quiz should remain topic-focused.",
         },
     ]
+
+
+_QUIZ_GENERIC_PATTERNS = (
+    "what should you do first",
+    "before starting",
+    "most productive next step",
+    "follow the step-by-step path",
+    "recommended difficulty",
+    "task context",
+    "main goal of",
+    "prepare",
+    "prerequisite",
+)
+
+
+def _quiz_question_is_topic_focused(question, title):
+    question_text = re.sub(r'\s+', ' ', str(question or '').strip().lower())
+    title_text = re.sub(r'\s+', ' ', str(title or '').strip().lower())
+
+    if not question_text:
+        return False
+
+    if any(pattern in question_text for pattern in _QUIZ_GENERIC_PATTERNS):
+        return False
+
+    title_tokens = [token for token in re.findall(r'[a-z0-9]+', title_text) if len(token) > 2]
+    if not title_tokens:
+        return True
+
+    return any(token in question_text for token in title_tokens[:3])
 
 
 def generate_task_quiz_with_ai(title, summary_text='', difficulty='Moderate', question_count=5):
@@ -182,9 +241,9 @@ def generate_task_quiz_with_ai(title, summary_text='', difficulty='Moderate', qu
     """
     question_count = max(5, min(int(question_count or 5), 7))
     prompt = f"""
-You are an expert tutor creating a post-task quiz.
+You are an expert tutor creating a topic-focused quiz.
 
-Task title: {title}
+Task title / topic: {title}
 Difficulty: {difficulty}
 Task summary / steps:
 {summary_text or 'No extra summary available.'}
@@ -196,8 +255,10 @@ Rules:
 3. Each item must have keys: question, options, answer, explanation.
 4. options must be an array of exactly 4 strings.
 5. answer must match one of the options exactly.
-6. Questions should test understanding, prerequisites, step order, and practical application.
-7. Keep language simple and clear.
+6. Every question must be about the actual topic in the title, not about generic task completion.
+7. Avoid generic workflow questions such as first step, preparation, step order, or productivity habits unless they are explicitly part of the topic.
+8. Prefer definitions, causes, examples, comparisons, and applications related to the topic.
+9. Keep language simple and clear.
 """
 
     raw_output = call_groq_api(prompt, max_completion_tokens=1800, temperature=0.2)
@@ -213,7 +274,7 @@ Rules:
                     answer = item.get('answer') or ''
                     question = (item.get('question') or '').strip()
                     explanation = (item.get('explanation') or '').strip()
-                    if question and isinstance(options, list) and len(options) == 4 and answer in options:
+                    if question and isinstance(options, list) and len(options) == 4 and answer in options and _quiz_question_is_topic_focused(question, title):
                         cleaned.append({
                             'question': question,
                             'options': [str(option).strip() for option in options],

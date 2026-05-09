@@ -556,12 +556,6 @@ def createtodo_ai(request):
                 recurring_type=recurring_type,
             )
             messages.success(request, f"✅ '{new_task.title}' added to inbox! Now pick your mood to start it.")
-
-            if isinstance(sub_tasks_list, list):
-                 sub_tasks_list = " ".join(sub_tasks_list)
-
-           
-
             
     return redirect('personal_dashboard')
 
