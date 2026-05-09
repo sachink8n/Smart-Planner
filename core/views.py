@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 import random
 import re
@@ -29,7 +30,8 @@ from .ai_service import (
     get_task_category_with_ai, 
     get_sub_tasks_with_ai, 
     get_task_difficulty_with_ai, 
-    get_time_estimate_with_ai
+    get_time_estimate_with_ai,
+    generate_task_quiz_with_ai,
 )
 
 
@@ -57,6 +59,60 @@ def parse_plan_days(plan_text):
         })
     days.sort(key=lambda d: d['day'])
     return days
+
+
+def _normalize_quiz_answer(value):
+    return re.sub(r'\s+', ' ', str(value or '').strip().lower())
+
+
+def _task_quiz_summary(task):
+    parts = [task.title]
+    if task.category:
+        parts.append(f"Category: {task.category}")
+    if task.difficulty:
+        parts.append(f"Difficulty: {task.difficulty}")
+    if task.sub_tasks:
+        parts.append(f"Guide: {task.sub_tasks}")
+    return "\n".join(parts)
+
+
+def _ensure_task_quiz(task):
+    if task.quiz_questions:
+        return task.quiz_questions
+
+    summary_text = _task_quiz_summary(task)
+    quiz_questions = generate_task_quiz_with_ai(
+        task.title,
+        summary_text=summary_text,
+        difficulty=task.difficulty,
+        question_count=5,
+    )
+    task.quiz_questions = quiz_questions
+    task.quiz_pending = True
+    task.save(update_fields=['quiz_questions', 'quiz_pending', 'last_updated'])
+    return quiz_questions
+
+
+def _calculate_quiz_points(task, score, total_questions):
+    if not total_questions:
+        return 0
+
+    base_points = {'Easy': 20, 'Moderate': 35, 'Hard': 50}.get(task.difficulty, 25)
+    ratio = score / total_questions
+    earned = max(5, round(base_points * ratio))
+    if score == total_questions:
+        earned += 10
+    return earned
+
+
+def _quiz_submission_context(task):
+    return {
+        'quiz_questions': task.quiz_questions or [],
+        'quiz_submitted': task.quiz_submitted,
+        'quiz_score': task.quiz_score,
+        'quiz_total_questions': task.quiz_total_questions,
+        'quiz_awarded_points': _calculate_quiz_points(task, task.quiz_score, task.quiz_total_questions) if task.quiz_total_questions else 0,
+    }
 
 
 BLOCKED_AI_PATTERN = re.compile(
@@ -95,20 +151,21 @@ def _get_task_timer_remaining_seconds(task):
 
 
 
-def award_xp_and_level_up(user, task_difficulty):
-    """Awards XP based on task difficulty and handles level ups."""
+def award_xp_and_level_up(user, task_difficulty, xp_override=None):
+    """Awards XP based on task difficulty, or an explicit quiz score reward."""
     profile, created = Profile.objects.get_or_create(user=user)
-    
+
     xp_map = {'Easy': 15, 'Moderate': 25, 'Hard': 40}
-    xp_to_add = xp_map.get(task_difficulty, 25)
-    
+    xp_to_add = int(xp_override) if xp_override is not None else xp_map.get(task_difficulty, 25)
+
     profile.xp += xp_to_add
-    
+
     xp_for_next_level = profile.level * 100
-    if profile.xp >= xp_for_next_level:
+    while profile.xp >= xp_for_next_level:
         profile.level += 1
-        profile.xp -= xp_for_next_level 
-    
+        profile.xp -= xp_for_next_level
+        xp_for_next_level = profile.level * 100
+
     profile.save()
     
 
@@ -117,6 +174,7 @@ def check_and_award_badges(user, completed_task):
     """Checks all badge conditions and awards them if met."""
     profile, created = Profile.objects.get_or_create(user=user)
     today = timezone.now().date()
+    completed_at = completed_task.datecompleted or completed_task.quiz_completed_at or timezone.now()
 
    
     if completed_task.difficulty == 'Hard':
@@ -126,20 +184,20 @@ def check_and_award_badges(user, completed_task):
             UserBadge.objects.get_or_create(user=user, badge=badge)
 
    
-    task_age = (completed_task.datecompleted.date() - completed_task.created.date()).days
+    task_age = (completed_at.date() - completed_task.created.date()).days
     if task_age >= 3:
         badge, created = Badge.objects.get_or_create(name="Phoenix 🔥", description="Complete a task that was over 3 days old.")
         UserBadge.objects.get_or_create(user=user, badge=badge)
 
     
-    if completed_task.datecompleted.weekday() in [5, 6]: 
-        tasks_on_this_day = Task.objects.filter(user=user, status='COMPLETED', datecompleted__date=completed_task.datecompleted.date()).count()
+    if completed_at.weekday() in [5, 6]: 
+        tasks_on_this_day = Task.objects.filter(user=user, status='COMPLETED', datecompleted__date=completed_at.date()).count()
         if tasks_on_this_day >= 3:
             badge, created = Badge.objects.get_or_create(name="Weekend Warrior 🤺", description="Complete 3 or more tasks on a weekend day.")
             UserBadge.objects.get_or_create(user=user, badge=badge)
 
    
-    completion_time = completed_task.datecompleted.time()
+    completion_time = completed_at.time()
     
     
     if completion_time < timezone.datetime.strptime('09:00', '%H:%M').time():
@@ -221,6 +279,91 @@ def create_study_plan_view(request):
 
 
 @login_required
+def task_quiz_view(request, task_id):
+    task = get_object_or_404(Task.objects.select_related('team', 'assignee', 'study_plan'), id=task_id)
+
+    if not _can_manage_task(request.user, task):
+        messages.error(request, "You do not have permission to view this quiz.")
+        return redirect('personal_dashboard')
+
+    quiz_questions = _ensure_task_quiz(task)
+    context = {
+        'task': task,
+        'quiz_questions': quiz_questions,
+        **_quiz_submission_context(task),
+    }
+    return render(request, 'core/task_quiz.html', context)
+
+
+@login_required
+def submit_task_quiz_view(request, task_id):
+    if request.method != 'POST':
+        return redirect('task_quiz', task_id=task_id)
+
+    task = get_object_or_404(Task.objects.select_related('team', 'assignee', 'study_plan'), id=task_id)
+
+    if not _can_manage_task(request.user, task):
+        messages.error(request, "You do not have permission to submit this quiz.")
+        return redirect('personal_dashboard')
+
+    quiz_questions = _ensure_task_quiz(task)
+    if not quiz_questions:
+        messages.error(request, "Quiz could not be generated. Please try again.")
+        return redirect('task_quiz', task_id=task.id)
+
+    correct_count = 0
+    for index, question in enumerate(quiz_questions):
+        selected_answer = request.POST.get(f'question_{index}', '')
+        if _normalize_quiz_answer(selected_answer) == _normalize_quiz_answer(question.get('answer')):
+            correct_count += 1
+
+    total_questions = len(quiz_questions)
+    earned_points = _calculate_quiz_points(task, correct_count, total_questions)
+
+    update_fields = [
+        'quiz_submitted',
+        'quiz_awarded',
+        'quiz_score',
+        'quiz_total_questions',
+        'quiz_submitted_at',
+        'quiz_pending',
+        'last_updated',
+    ]
+
+    if not task.quiz_awarded:
+        award_xp_and_level_up(request.user, task.difficulty, xp_override=earned_points)
+        check_and_award_badges(request.user, task)
+
+        if total_questions and correct_count / total_questions >= 0.8:
+            badge, created = Badge.objects.get_or_create(
+                name="Quiz Ace 🧠",
+                defaults={
+                    'badge_id': 'quiz-ace',
+                    'description': 'Score 80% or more in a post-task quiz.'
+                }
+            )
+            UserBadge.objects.get_or_create(user=request.user, badge=badge)
+
+        task.quiz_awarded = True
+
+    task.quiz_submitted = True
+    task.quiz_score = correct_count
+    task.quiz_total_questions = total_questions
+    task.quiz_submitted_at = timezone.now()
+    task.quiz_pending = False
+    task.save(update_fields=update_fields)
+
+    messages.success(
+        request,
+        f"Quiz submitted. You scored {correct_count}/{total_questions} and earned {earned_points} points."
+    )
+
+    if task.team:
+        return redirect('team_dashboard', team_id=task.team.id)
+    return redirect('personal_dashboard')
+
+
+@login_required
 def view_study_plan_view(request, plan_id):
     plan = get_object_or_404(StudyPlan, id=plan_id, user=request.user)
 
@@ -277,7 +420,11 @@ def personal_dashboard_view(request):
     profile, created = Profile.objects.get_or_create(user=user)
 
     # Bina date waale team tasks
-    assigned_tasks = Todo.objects.filter(assignee=user, scheduled_date__isnull=True, status='INBOX')
+    assigned_tasks = Todo.objects.select_related('team', 'assignee', 'study_plan').filter(
+        assignee=user,
+        scheduled_date__isnull=True,
+        status='INBOX',
+    )
     
     # SARE TASKS (Personal + Team + Study Plan)
     # Exclude logic zaroori hai taaki 'assigned_tasks' aur 'active' yahan na dikhein
@@ -475,31 +622,40 @@ def complete_task(request, task_id):
     completion_time = timezone.now()
     task.status = 'COMPLETED'
     task.datecompleted = completion_time
+    task.quiz_completed_at = completion_time
+    task.quiz_pending = True
+    task.quiz_submitted = False
+    task.quiz_awarded = False
+    task.quiz_score = 0
+    task.quiz_total_questions = 0
+    task.quiz_submitted_at = None
     
     if task.team and not task.assignee:
         task.assignee = request.user
 
     task.save()
     
-    award_xp_and_level_up(request.user, task.difficulty)
-    check_and_award_badges(request.user, task)
-    
     if task.is_recurring and task.recurring_type in ['DAILY', 'WEEKLY']:
         next_days = 1 if task.recurring_type == 'DAILY' else 7
         base_date = task.scheduled_date or completion_time.date()
         task.last_completed = completion_time.date()
         task.status = 'INBOX'
-        task.datecompleted = None
         task.scheduled_date = base_date + timedelta(days=next_days)
         task.timer_start_time = None
         task.timer_seconds_remaining = None
         task.save(update_fields=[
             'last_completed',
             'status',
-            'datecompleted',
             'scheduled_date',
             'timer_start_time',
             'timer_seconds_remaining',
+            'quiz_completed_at',
+            'quiz_pending',
+            'quiz_submitted',
+            'quiz_awarded',
+            'quiz_score',
+            'quiz_total_questions',
+            'quiz_submitted_at',
             'last_updated',
         ])
         messages.success(request, f"Recurring task '{task.title}' reset for next cycle.")
@@ -508,11 +664,8 @@ def complete_task(request, task_id):
     
    
     request.session['show_mood_prompt'] = True
-        
-    if task.team:
-        return redirect('team_dashboard', team_id=task.team.id)
-    else:
-        return redirect('personal_dashboard')
+
+    return redirect('task_quiz', task_id=task.id)
 
 
 @login_required

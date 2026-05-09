@@ -10,6 +10,8 @@ urlpatterns = [
     path('add_manual/', views.add_task_manual, name='add_task_manual'),
 
     path('complete/<int:task_id>/', views.complete_task, name='complete_task'),
+    path('task/<int:task_id>/quiz/', views.task_quiz_view, name='task_quiz'),
+    path('task/<int:task_id>/quiz/submit/', views.submit_task_quiz_view, name='submit_task_quiz'),
     path('delete/<int:task_id>/', views.delete_task, name='delete_task'),
     path('snooze/<int:task_id>/', views.snooze_task, name='snooze_task'),
 

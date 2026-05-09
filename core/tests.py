@@ -2,9 +2,10 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import patch
 
-from .models import OTPVerification, StudyPlan
+from .models import OTPVerification, StudyPlan, Todo, Profile
 
 
 @override_settings(
@@ -109,3 +110,98 @@ class StudyPlanViewTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, '/add-day/Day%203/')
+
+
+class TaskQuizFlowTests(TestCase):
+	def setUp(self):
+		self.user = User.objects.create_user(
+			username='quizuser',
+			email='quiz@example.com',
+			password='Password@123',
+		)
+		self.client.login(username='quizuser', password='Password@123')
+
+	def test_complete_task_redirects_to_quiz(self):
+		task = Todo.objects.create(
+			user=self.user,
+			title='Learn Django Views',
+			status='INBOX',
+			difficulty='Moderate',
+			category='Learning',
+			sub_tasks='- Prepare project\n- Read docs',
+		)
+
+		response = self.client.get(reverse('complete_task', args=[task.id]))
+
+		self.assertRedirects(response, reverse('task_quiz', args=[task.id]))
+		task.refresh_from_db()
+		self.assertEqual(task.status, 'COMPLETED')
+		self.assertTrue(task.quiz_pending)
+		self.assertIsNotNone(task.quiz_completed_at)
+
+	def test_submit_quiz_awards_points_and_marks_completed(self):
+		task = Todo.objects.create(
+			user=self.user,
+			title='Learn Django Views',
+			status='COMPLETED',
+			difficulty='Hard',
+			category='Learning',
+			sub_tasks='- Prepare project\n- Read docs',
+			quiz_pending=True,
+			quiz_questions=[
+				{
+					'question': 'What is the first step?',
+					'options': ['Read docs', 'Ignore it', 'Quit', 'Randomize'],
+					'answer': 'Read docs',
+					'explanation': 'Start by reading the docs.',
+				},
+				{
+					'question': 'What should you prepare?',
+					'options': ['Project setup', 'Nothing', 'Noise', 'Delay'],
+					'answer': 'Project setup',
+					'explanation': 'Prepare the project first.',
+				},
+				{
+					'question': 'Which is a good habit?',
+					'options': ['Practice', 'Skip', 'Procrastinate', 'Forget'],
+					'answer': 'Practice',
+					'explanation': 'Practice reinforces understanding.',
+				},
+				{
+					'question': 'What is the goal?',
+					'options': ['Learn', 'Avoid', 'Discard', 'Replace'],
+					'answer': 'Learn',
+					'explanation': 'The goal is to learn the topic.',
+				},
+				{
+					'question': 'What follows the steps?',
+					'options': ['Review', 'Sleep', 'Leave', 'Skip'],
+					'answer': 'Review',
+					'explanation': 'Reviewing reinforces learning.',
+				},
+			],
+			quiz_completed_at=timezone.now(),
+		)
+
+		profile = Profile.objects.get(user=self.user)
+		starting_xp = profile.xp
+
+		response = self.client.post(
+			reverse('submit_task_quiz', args=[task.id]),
+			{
+				'question_0': 'Read docs',
+				'question_1': 'Project setup',
+				'question_2': 'Practice',
+				'question_3': 'Learn',
+				'question_4': 'Review',
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		task.refresh_from_db()
+		profile.refresh_from_db()
+		self.assertTrue(task.quiz_submitted)
+		self.assertTrue(task.quiz_awarded)
+		self.assertEqual(task.quiz_score, 5)
+		self.assertEqual(task.quiz_total_questions, 5)
+		self.assertGreater(profile.xp, starting_xp)
