@@ -31,7 +31,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-me")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
-USE_LOCAL_SQLITE = os.environ.get("USE_LOCAL_SQLITE", "false").lower() == "true"
+USE_LOCAL_SQLITE = os.environ.get("USE_LOCAL_SQLITE", "true" if DEBUG else "false").lower() == "true"
 
 ALLOWED_HOSTS = ['*']
 

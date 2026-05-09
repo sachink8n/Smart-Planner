@@ -155,6 +155,7 @@ EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=
 EMAIL_TIMEOUT=15
 SECRET_KEY=your_django_secret_key
+USE_LOCAL_SQLITE=True
 DATABASE_URL=any_sql_database
 ```
 
@@ -163,6 +164,7 @@ DATABASE_URL=any_sql_database
 - `BREVO_API_KEY` is preferred for OTP delivery in hosted environments.
 - If `BREVO_API_KEY` is missing, code falls back to SMTP credentials.
 - `EMAIL_TIMEOUT` is important to prevent SMTP hangs under Gunicorn.
+- `USE_LOCAL_SQLITE=True` keeps local `runserver` sessions on `db.sqlite3` even if a `DATABASE_URL` is present.
 
 ## Local Setup
 
