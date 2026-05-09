@@ -468,7 +468,7 @@ def personal_dashboard_view(request):
 @login_required
 def kanban_board_view(request):
     tasks = (
-        Todo.objects.select_related('team', 'assignee')
+        Todo.objects.select_related('team', 'assignee', 'study_plan')
         .filter(Q(user=request.user, team__isnull=True) | Q(assignee=request.user))
         .exclude(status='DELETED')
         .order_by('-priority', 'created')
@@ -893,7 +893,7 @@ def team_list_view(request):
     User jin teams ka member hai, unki list dikhata hai.
     """
   
-    teams = request.user.teams.all()
+    teams = request.user.teams.all().prefetch_related('members')
     context = {
         'teams': teams
     }
@@ -922,21 +922,21 @@ def create_team_view(request):
 
 @login_required
 def team_dashboard_view(request, team_id):
-    team = get_object_or_404(Team, id=team_id)
+    team = get_object_or_404(Team.objects.prefetch_related('members'), id=team_id)
     
     if request.user not in team.members.all():
         messages.error(request, "You are not authorized to view this team.")
         return redirect('team_list')
 
     
-    my_assigned_tasks = Task.objects.filter(
+    my_assigned_tasks = Task.objects.select_related('team', 'assignee', 'study_plan').filter(
         team=team, 
         assignee=request.user, 
         status__in=['INBOX', 'ACTIVE']
     ).order_by('created')
     
     
-    other_team_tasks = Task.objects.filter(
+    other_team_tasks = Task.objects.select_related('team', 'assignee', 'study_plan').filter(
         team=team, 
         status__in=['INBOX', 'ACTIVE']
     ).exclude(
@@ -945,7 +945,7 @@ def team_dashboard_view(request, team_id):
     
   
     today = timezone.now().date()
-    completed_today = Task.objects.filter(
+    completed_today = Task.objects.select_related('team', 'assignee', 'study_plan').filter(
         team=team, 
         status='COMPLETED',
         datecompleted__date=today  
