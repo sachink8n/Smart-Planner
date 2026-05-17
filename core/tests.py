@@ -228,44 +228,131 @@ class TaskQuizFlowTests(TestCase):
 		self.assertIn('- Work through examples', outline)
 
 	@patch('core.ai_service.call_groq_api')
-	def test_quiz_generation_rejects_generic_process_questions(self, mock_call_groq_api):
+	def test_quiz_prompt_uses_extracted_concepts(self, mock_call_groq_api):
 		mock_call_groq_api.return_value = json.dumps([
 			{
-				'question': 'What should you do first before starting?',
-				'options': ['Review prerequisites', 'Submit it', 'Close the browser', 'Ignore the task'],
-				'answer': 'Review prerequisites',
-				'explanation': 'Generic workflow question.',
+				'question': 'Given a relation with partial dependency, which normalization step removes it?',
+				'options': ['2NF', '1NF', 'BFS', 'UDP'],
+				'answer': '2NF',
+				'explanation': 'Partial dependency is removed in second normal form.',
 			},
 			{
-				'question': 'What is the most productive next step after preparation?',
-				'options': ['Follow the step-by-step path', 'Stop working', 'Ignore the plan', 'Repeat the title'],
-				'answer': 'Follow the step-by-step path',
-				'explanation': 'Generic workflow question.',
+				'question': 'A non-key attribute depends on another non-key attribute. Which normal form is affected?',
+				'options': ['3NF', '1NF', 'Mutex', 'DNS'],
+				'answer': '3NF',
+				'explanation': 'This is a transitive dependency issue.',
 			},
 			{
-				'question': 'Which summary best describes the task context?',
-				'options': ['It is about the same task and its key steps', 'It is about a random unrelated topic', 'It has no relation to the task', 'It only checks spelling'],
-				'answer': 'It is about the same task and its key steps',
-				'explanation': 'Generic workflow question.',
+				'question': 'A table keeps repeating the same values in multiple rows. What anomaly is most likely?',
+				'options': ['Update anomaly', 'Deadlock', 'Handshake', 'Stack overflow'],
+				'answer': 'Update anomaly',
+				'explanation': 'Redundancy often leads to update anomalies.',
 			},
 			{
-				'question': 'What should you do first before starting?',
-				'options': ['Review prerequisites', 'Submit it', 'Close the browser', 'Ignore the task'],
-				'answer': 'Review prerequisites',
-				'explanation': 'Generic workflow question.',
+				'question': 'Which operation is best after identifying redundancy in a relation?',
+				'options': ['Decompose the table', 'Add more duplicates', 'Change the quiz format', 'Ignore dependencies'],
+				'answer': 'Decompose the table',
+				'explanation': 'Decomposition removes redundant dependencies.',
 			},
 			{
-				'question': 'Which approach best matches the recommended difficulty for this task (Hard)?',
-				'options': ['Use a structured, focused approach', 'Rush without planning', 'Skip all prerequisites', 'Do it randomly'],
-				'answer': 'Use a structured, focused approach',
-				'explanation': 'Generic workflow question.',
+				'question': 'When a composite key is present, what dependency should be checked first?',
+				'options': ['Partial dependency', 'Packet loss', 'Semaphore wait', 'Heapify'],
+				'answer': 'Partial dependency',
+				'explanation': 'Composite keys can create partial dependencies.',
 			},
 		])
 
 		from .ai_service import generate_task_quiz_with_ai
 
-		questions = generate_task_quiz_with_ai('Operating System Deadlock', 'Focus on deadlock conditions and prevention.', 'Hard', 5)
+		questions = generate_task_quiz_with_ai(
+			'Normalization in DBMS',
+			'Prerequisites: SQL basics, database design. Step-by-step path: Apply 1NF, remove partial dependencies, remove transitive dependencies, validate decomposition.',
+			'Moderate',
+			5,
+		)
 
 		self.assertEqual(len(questions), 5)
-		self.assertTrue(all('deadlock' in question['question'].lower() or 'operating system' in question['question'].lower() for question in questions))
-		self.assertFalse(any('before starting' in question['question'].lower() for question in questions))
+		joined = ' '.join(question['question'].lower() for question in questions)
+		self.assertIn('normal form', joined)
+		self.assertIn('dependency', joined)
+		self.assertFalse('what should' in joined)
+		self.assertFalse('quiz' in joined)
+
+		self.assertTrue(mock_call_groq_api.called)
+		prompt = mock_call_groq_api.call_args.args[0]
+		self.assertIn('Extracted concepts to use:', prompt)
+		self.assertIn('Normalization in DBMS', prompt)
+		self.assertIn('partial dependency', prompt.lower())
+		self.assertIn('transitive dependency', prompt.lower())
+
+	def test_quiz_generation_uses_dbms_domain_terms(self):
+		from .ai_service import _extract_technical_concepts, _classify_quiz_domain
+
+		concepts = _extract_technical_concepts(
+			'Normalization in DBMS',
+			'Prerequisites: SQL basics, database design, familiarity with data redundancy and dependency. Step-by-step path: 1NF, 2NF, 3NF, BCNF, partial dependencies, transitive dependencies.',
+		)
+		domain = _classify_quiz_domain('Normalization in DBMS', 'Prerequisites: SQL basics, database design, familiarity with data redundancy and dependency. Step-by-step path: 1NF, 2NF, 3NF, BCNF, partial dependencies, transitive dependencies.', concepts)
+
+		self.assertEqual(domain, 'dbms')
+		self.assertTrue(any('1NF' in concept or '2NF' in concept or '3NF' in concept for concept in concepts))
+		self.assertTrue(any('dependency' in concept.lower() for concept in concepts))
+
+	@patch('core.ai_service.call_groq_api')
+	def test_quiz_regenerates_when_response_is_generic(self, mock_call_groq_api):
+		mock_call_groq_api.side_effect = [
+			json.dumps([
+				{
+					'question': 'What is the main idea of this topic?',
+					'options': ['Understanding the topic', 'Random unrelated subject', 'Formatting issue', 'Time management'],
+					'answer': 'Understanding the topic',
+					'explanation': 'Generic answer.',
+				},
+			]),
+			json.dumps([
+				{
+					'question': 'A relation contains repeating groups and non-atomic values. Which normal form is violated?',
+					'options': ['1NF', '2NF', '3NF', 'BCNF'],
+					'answer': '1NF',
+					'explanation': 'Repeating groups violate first normal form.',
+				},
+				{
+					'question': 'A non-key attribute depends on part of a composite key. What issue is this?',
+					'options': ['Partial dependency', 'Transitive dependency', 'Deadlock', 'Starvation'],
+					'answer': 'Partial dependency',
+					'explanation': 'This is a partial dependency.',
+				},
+				{
+					'question': 'When one non-key attribute determines another non-key attribute, which normal form is affected?',
+					'options': ['3NF', '1NF', 'BFS', 'TCP'],
+					'answer': '3NF',
+					'explanation': 'This is a transitive dependency.',
+				},
+				{
+					'question': 'What is the best correction when redundancy still remains after normalization?',
+					'options': ['Decompose the relation further', 'Add filler columns', 'Change the question wording', 'Use a mutex'],
+					'answer': 'Decompose the relation further',
+					'explanation': 'Further decomposition can remove remaining redundancy.',
+				},
+				{
+					'question': 'Which anomaly is likely when redundant data is updated in multiple rows?',
+					'options': ['Update anomaly', 'Route mismatch', 'Stack overflow', 'Handshake failure'],
+					'answer': 'Update anomaly',
+					'explanation': 'Redundancy can cause update anomalies.',
+				},
+			]),
+		]
+
+		from .ai_service import generate_task_quiz_with_ai
+
+		questions = generate_task_quiz_with_ai(
+			'Normalization in DBMS',
+			'Prerequisites: SQL basics, database design. Step-by-step path: Apply 1NF, remove partial dependencies, remove transitive dependencies, validate decomposition.',
+			'Moderate',
+			5,
+		)
+
+		self.assertEqual(len(questions), 5)
+		self.assertGreaterEqual(mock_call_groq_api.call_count, 2)
+		self.assertFalse(any('main idea' in question['question'].lower() for question in questions))
+		self.assertFalse(any('random unrelated subject' in ' '.join(question['options']).lower() for question in questions))
