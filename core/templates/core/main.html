@@ -77,7 +77,7 @@
                                 </select>
                             </div>
                             <div class="sm:col-span-4">
-                                <button type="submit" class="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[color:var(--accent-color)] px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-[color:var(--accent-hover)] sm:text-base">Magic Add</button>
+                                <button type="submit" class="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-white/50 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-400/20 sm:text-base">Magic Add</button>
                             </div>
                         </div>
                     </form>
@@ -139,7 +139,7 @@
                         00:00
                     </div>
                     <div class="mb-3 grid gap-2 sm:grid-cols-3">
-                        <button id="start-btn" class="glow-button rounded-xl bg-[color:var(--accent-color)] px-4 py-3 text-sm font-bold text-slate-950 shadow transition hover:bg-[color:var(--accent-hover)] sm:text-base">START</button>
+                        <button id="start-btn" class="glow-button rounded-xl border border-green-500/50 bg-black px-4 py-3 text-sm font-bold text-green-400 shadow transition hover:bg-green-400/10 sm:text-base">START</button>
                         <button id="pause-btn" class="rounded-xl border border-yellow-400/50 px-4 py-3 text-sm font-bold text-yellow-300 transition hover:bg-yellow-400/10 sm:text-base">PAUSE</button>
                         <button id="add-time-btn" class="rounded-xl border border-cyan-400/50 px-4 py-3 text-sm font-bold text-cyan-300 transition hover:bg-cyan-400/10 sm:text-base">+5 MIN</button>
                     </div>
@@ -154,7 +154,7 @@
                     <h6 class="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-cyan-400 sm:text-sm">
                         <i class="fas fa-robot mr-2"></i>AI STEP-BY-STEP GUIDE
                     </h6>
-                    <div id="ai-steps-box" class="flex flex-col gap-3">
+                    <div id="ai-steps-box" class="ai-roadmap-shell">
                         <div id="raw-ai-data" class="d-none">{{ active_task.sub_tasks|safe }}</div>
                         <div id="formatted-steps"></div>
                     </div>
@@ -264,24 +264,224 @@
         color: #e8e8a2;
     }
 
-    /* TEAL GLOW LOGIC */
-    .ai-step-card {
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
-        padding: 16px 20px;
-        border-left: 4px solid #0dcaf0; 
+    .ai-roadmap-shell {
         display: flex;
-        align-items: flex-start;
-        gap: 15px;
-        transition: all 0.3s ease;
+        flex-direction: column;
+        gap: 18px;
     }
 
-    /* Hover par Teal Glow */
+    .ai-roadmap-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        background: linear-gradient(145deg, rgba(18, 18, 18, 0.92), rgba(9, 9, 11, 0.84));
+        box-shadow:
+            0 18px 50px rgba(0, 0, 0, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .ai-roadmap-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(125, 249, 255, 0.40), rgba(139, 92, 246, 0.20), rgba(0, 0, 0, 0));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+
+    .ai-roadmap-card:hover {
+        transform: translateY(-3px);
+        box-shadow:
+            0 22px 60px rgba(0, 0, 0, 0.56),
+            0 0 26px rgba(13, 202, 240, 0.10),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .ai-roadmap-section {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .ai-roadmap-section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 2px 2px 0;
+        color: #ffffff;
+    }
+
+    .ai-roadmap-section-title .rule {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(13, 202, 240, 0.45), rgba(255, 255, 255, 0.08));
+    }
+
+    .ai-roadmap-section-title .label {
+        font-size: 0.73rem;
+        font-weight: 900;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #8defff;
+    }
+
+    .ai-card-grid {
+        display: grid;
+        gap: 14px;
+    }
+
+    .ai-prereq-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 18px;
+        padding: 24px;
+    }
+
+    .ai-step-card {
+        display: grid;
+        grid-template-columns: auto 1px 1fr;
+        align-items: stretch;
+        gap: 18px;
+        padding: 20px 22px;
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    }
+
     .ai-step-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        transform: translateX(8px);
-        box-shadow: 0 0 15px rgba(13, 202, 240, 0.3); /* The Glow */
-        border-color: #0dcaf0;
+        transform: translateY(-3px) translateX(4px);
+        box-shadow:
+            0 20px 48px rgba(0, 0, 0, 0.42),
+            0 0 22px rgba(13, 202, 240, 0.14);
+    }
+
+    .ai-card-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(13, 202, 240, 0.12);
+        border: 1px solid rgba(125, 249, 255, 0.22);
+        color: #9ff4ff;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 12px 24px rgba(0,0,0,0.22);
+    }
+
+    .ai-card-icon i {
+        font-size: 1.1rem;
+    }
+
+    .ai-card-icon.step-icon {
+        background: linear-gradient(145deg, rgba(13, 202, 240, 0.14), rgba(168, 85, 247, 0.12));
+    }
+
+    .ai-step-divider {
+        width: 1px;
+        align-self: stretch;
+        background: linear-gradient(180deg, rgba(13, 202, 240, 0.0), rgba(13, 202, 240, 0.55), rgba(13, 202, 240, 0.0));
+        box-shadow: 0 0 18px rgba(13, 202, 240, 0.25);
+    }
+
+    .ai-prereq-content,
+    .ai-step-content {
+        min-width: 0;
+    }
+
+    .ai-card-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: #8defff;
+    }
+
+    .ai-card-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: #ffffff;
+    }
+
+    .ai-card-desc {
+        margin-top: 6px;
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 0.94rem;
+        line-height: 1.7;
+    }
+
+    .ai-checklist {
+        margin-top: 14px;
+        display: grid;
+        gap: 9px;
+    }
+
+    .ai-checklist-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 11px 12px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .ai-checklist-item i {
+        margin-top: 2px;
+        color: #8be7ff;
+    }
+
+    .ai-step-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .ai-step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 50px;
+        height: 34px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: rgba(13, 202, 240, 0.14);
+        border: 1px solid rgba(125, 249, 255, 0.25);
+        color: #9ff4ff;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 8px 20px rgba(13, 202, 240, 0.10);
+    }
+
+    .ai-step-heading {
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.35;
+    }
+
+    .ai-step-copy {
+        margin-top: 2px;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.94rem;
+        line-height: 1.72;
     }
 
     .active-mission-glow {
@@ -360,8 +560,29 @@ document.addEventListener('DOMContentLoaded', function() {
         let rawText = rawDataBox.textContent.trim();
         rawText = rawText.replace(/^\[('|")/, '').replace(/('|")\]$/, '');
         const lines = rawText.split(/\r?\n/);
-        
-        let htmlContent = '';
+
+        const escapeHtml = (value) => value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const prereqIcons = ['fas fa-shield-heart', 'fas fa-clipboard-check', 'fas fa-layer-group'];
+        const stepIcons = [
+            'fas fa-compass-drafting',
+            'fas fa-code-branch',
+            'fas fa-screwdriver-wrench',
+            'fas fa-chart-line',
+            'fas fa-flask-vial',
+            'fas fa-bullseye',
+        ];
+
+        const chunkByHeading = {
+            prerequisites: [],
+            steps: []
+        };
+        let currentSection = null;
 
         lines.forEach((line) => {
             const cleanLine = line.trim().replace(/\*/g, '');
@@ -369,9 +590,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const headingMatch = cleanLine.match(/^(Prerequisites|Step-by-step path|Step by step path|Steps|Execution steps)\s*:?$/i);
-            if (headingMatch) {
-                htmlContent += `<div class="ai-section-card shadow-sm">${headingMatch[1]}</div>`;
+            const prereqHeading = cleanLine.match(/^Prerequisites\s*:?$/i);
+            const stepHeading = cleanLine.match(/^(Step-by-step path|Step by step path|Steps|Execution steps)\s*:?$/i);
+            if (prereqHeading) {
+                currentSection = 'prerequisites';
+                return;
+            }
+            if (stepHeading) {
+                currentSection = 'steps';
                 return;
             }
 
@@ -380,16 +606,107 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!bulletText) {
                     return;
                 }
-
-                htmlContent += `
-                    <div class="ai-step-card shadow-sm">
-                        <div class="step-number">•</div>
-                        <div class="step-text">${bulletText}</div>
-                    </div>
-                `;
+                if (currentSection === 'steps' || /^step\s*\d+\s*:/i.test(bulletText)) {
+                    chunkByHeading.steps.push(bulletText);
+                } else {
+                    chunkByHeading.prerequisites.push(bulletText);
+                }
             }
         });
-        
+
+        const parseStep = (rawStep, index) => {
+            const clean = rawStep.replace(/^step\s*\d+\s*:\s*/i, '');
+            const parts = clean.split(/\s+[-–—]\s+|\s*:\s*/);
+            const title = parts.shift() || clean;
+            const description = parts.join(' - ').trim();
+            const numberMatch = rawStep.match(/^step\s*(\d+)\s*:/i);
+            const stepNumber = numberMatch ? numberMatch[1] : String(index + 1);
+            return {
+                number: stepNumber,
+                title: title.trim(),
+                description: description || 'Follow this step to move the roadmap forward.',
+            };
+        };
+
+        const renderPrerequisites = (items) => {
+            const prereqItems = items
+                .flatMap((item) => item.split(/;\s*/))
+                .map((item) => item.trim())
+                .filter(Boolean);
+
+            if (!prereqItems.length) {
+                return '';
+            }
+
+            return `
+                <section class="ai-roadmap-section">
+                    <div class="ai-roadmap-section-title">
+                        <span class="label">Prerequisites</span>
+                        <span class="rule"></span>
+                    </div>
+                    <div class="ai-roadmap-card ai-prereq-card">
+                        <div class="ai-card-icon">
+                            <i class="${prereqIcons[0]}"></i>
+                        </div>
+                        <div class="ai-prereq-content">
+                            <div class="ai-card-kicker">Prerequisites</div>
+                            <h4 class="ai-card-title">Set these up before starting</h4>
+                            <p class="ai-card-desc">These basics make the roadmap easier to follow and reduce avoidable mistakes.</p>
+                            <div class="ai-checklist">
+                                ${prereqItems.map((item) => `
+                                    <div class="ai-checklist-item">
+                                        <i class="fas fa-circle-check"></i>
+                                        <div>${escapeHtml(item)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+        };
+
+        const renderRoadmapSteps = (items) => {
+            if (!items.length) {
+                return '';
+            }
+
+            const cards = items.map((step, index) => {
+                const parsed = parseStep(step, index);
+                const iconClass = stepIcons[index % stepIcons.length];
+                return `
+                    <div class="ai-roadmap-card ai-step-card">
+                        <div class="ai-card-icon step-icon">
+                            <i class="${iconClass}"></i>
+                        </div>
+                        <div class="ai-step-divider"></div>
+                        <div class="ai-step-content">
+                            <div class="ai-step-meta">
+                                <span class="ai-step-number">${String(parsed.number).padStart(2, '0')}</span>
+                                <div class="ai-step-heading">${escapeHtml(parsed.title)}</div>
+                            </div>
+                            <div class="ai-step-copy">${escapeHtml(parsed.description)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <section class="ai-roadmap-section">
+                    <div class="ai-roadmap-section-title">
+                        <span class="label">Step-by-step path</span>
+                        <span class="rule"></span>
+                    </div>
+                    <div class="ai-card-grid">${cards}</div>
+                </section>
+            `;
+        };
+
+        const htmlContent = [
+            renderPrerequisites(chunkByHeading.prerequisites),
+            renderRoadmapSteps(chunkByHeading.steps),
+        ].filter(Boolean).join('');
+
         formattedBox.innerHTML = htmlContent || `<div class="text-secondary small">No detailed steps found.</div>`;
     }
 });
